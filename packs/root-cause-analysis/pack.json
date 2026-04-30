@@ -1,0 +1,42 @@
+{
+  "schema_version": "crux.pack.v1",
+  "name": "root-cause-analysis",
+  "display_name": "Root Cause Analysis",
+  "version": "1.0.0",
+  "analysis_scope": "root-cause-analysis",
+  "description": "Evaluates operational failures by separating symptoms, mechanisms, evidence, and fixes.",
+  "input_template": {
+    "output_goal": "root cause analysis memo",
+    "time_horizon": "90 days",
+    "risk_tolerance": "medium",
+    "known_constraints": [
+      "Separate symptom correlation from causal mechanism.",
+      "Prefer fixes that can be instrumented."
+    ]
+  },
+  "source_requirements": {
+    "min_sources": 3,
+    "required_source_types": ["dataset", "internal_document", "expert_input"],
+    "required_questions": [
+      "Where did the metric change?",
+      "What mechanism explains the change?",
+      "What instrumentation can falsify the suspected cause?"
+    ]
+  },
+  "claim_taxonomy": ["symptom", "causal mechanism", "instrumentation gap", "fix hypothesis", "operational decision"],
+  "expected_evidence_types": ["funnel comparison", "instrumentation diff", "session feedback", "experiment readout"],
+  "known_failure_modes": ["treating correlation as cause", "ignoring instrumentation gaps", "choosing broad fixes"],
+  "eval_rubric": {
+    "min_scores": {
+      "faithfulness": 1,
+      "claim_graph_integrity": 1,
+      "decision_usefulness": 1
+    },
+    "required_diagnostics": []
+  },
+  "memo_sections": ["Recommendation", "Core Reasoning", "Uncertainty", "Next Tests"],
+  "benchmark": {
+    "scenario": "e2e/scenarios/root-cause-analysis.yaml",
+    "expectation": "e2e/expectations/root-cause-analysis.json"
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crux.local/schemas/pack.schema.json",
+  "title": "Pack",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "name",
+    "display_name",
+    "version",
+    "analysis_scope",
+    "description",
+    "input_template",
+    "source_requirements",
+    "claim_taxonomy",
+    "expected_evidence_types",
+    "known_failure_modes",
+    "eval_rubric",
+    "memo_sections",
+    "benchmark"
+  ],
+  "properties": {
+    "schema_version": { "const": "crux.pack.v1" },
+    "name": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "display_name": { "type": "string", "minLength": 1 },
+    "version": { "type": "string", "minLength": 1 },
+    "analysis_scope": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "description": { "type": "string", "minLength": 1 },
+    "input_template": {
+      "type": "object",
+      "required": ["output_goal", "time_horizon", "risk_tolerance"],
+      "properties": {
+        "output_goal": { "type": "string", "minLength": 1 },
+        "time_horizon": { "type": "string", "minLength": 1 },
+        "risk_tolerance": { "type": "string", "minLength": 1 },
+        "known_constraints": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "source_requirements": {
+      "type": "object",
+      "required": ["min_sources", "required_source_types", "required_questions"],
+      "properties": {
+        "min_sources": { "type": "integer", "minimum": 0 },
+        "required_source_types": {
+          "type": "array",
+          "items": {
+            "enum": ["web", "paper", "dataset", "internal_document", "expert_input"]
+          }
+        },
+        "required_questions": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "claim_taxonomy": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "expected_evidence_types": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "known_failure_modes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "eval_rubric": {
+      "type": "object",
+      "required": ["min_scores", "required_diagnostics"],
+      "properties": {
+        "min_scores": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required_diagnostics": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "memo_sections": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "benchmark": {
+      "type": "object",
+      "required": ["scenario", "expectation"],
+      "properties": {
+        "scenario": { "type": "string", "minLength": 1 },
+        "expectation": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

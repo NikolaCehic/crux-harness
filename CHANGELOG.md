@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.7.0 - 2026-04-30
+
+- Added `pack.json` schema validation for vertical agent packs.
+- Added seven initial pack manifests for investment diligence, market entry, policy analysis, product strategy, root-cause analysis, scientific thesis evaluation, and strategic technology.
+- Added pack loader, discovery, custom-scope fallback, and `crux packs list` / `crux packs inspect`.
+- Added tests for valid packs, invalid manifests, pack discovery, and custom scopes.
+
 ## 1.6.0 - 2026-04-30
 
 - Added `review.json` as a schema-validated human review sidecar artifact.

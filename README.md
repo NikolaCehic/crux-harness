@@ -107,6 +107,13 @@ npm run crux -- review evidence runs/latest E1 --reviewer analyst --note "Useful
 npm run crux -- review export runs/latest --out reviewed_memo.md
 ```
 
+List and inspect vertical packs:
+
+```bash
+npm run crux -- packs list
+npm run crux -- packs inspect product-strategy
+```
+
 Compare two runs:
 
 ```bash
@@ -153,7 +160,7 @@ npm run crux -- benchmark --regression-threshold 0.05
 
 ## Current Implementation
 
-Crux v1.5 is a product-grade local harness for auditable, source-grounded analysis-agent runs. It remains deterministic by default, with optional LLM mappers behind strict schemas and provenance checks.
+Crux v1.7 is a product-grade local harness for auditable, source-grounded analysis-agent runs. It remains deterministic by default, with optional LLM mappers behind strict schemas and provenance checks.
 
 Every run writes `run_config.json`, which locks the harness version, input hash, source policy, budgets, mapper selection, and prompt versions.
 
@@ -178,6 +185,8 @@ Eval reports include structured diagnostics with stage, severity, category, mess
 Crux can also write a static HTML run inspector with `crux report <runDir>`. The report links the decision memo, root claims, claim graph, evidence, source excerpts, contradictions, uncertainty, eval council, diagnostics, and trace timeline without requiring a hosted app.
 
 Human review is captured in `review.json` as a sidecar artifact. Reviewers can approve or reject claims, annotate evidence, and export a reviewed memo that clearly separates human review from the original machine-generated memo.
+
+Vertical packs live under `packs/<pack-name>/pack.json`. Packs define source requirements, claim taxonomies, expected evidence, known failure modes, eval rubrics, memo sections, and benchmark links without hard-coding domains into the core harness.
 
 Crux includes optional LLM claim and evidence mappers behind the same validation boundary. Deterministic mapping remains the default. To opt in manually, set:
 

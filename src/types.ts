@@ -318,6 +318,38 @@ export type ReviewAction = {
   metadata: Record<string, unknown>;
 };
 
+export type PackManifest = {
+  schema_version: "crux.pack.v1";
+  name: string;
+  display_name: string;
+  version: string;
+  analysis_scope: string;
+  description: string;
+  input_template: {
+    output_goal: string;
+    time_horizon: string;
+    risk_tolerance: string;
+    known_constraints?: string[];
+  };
+  source_requirements: {
+    min_sources: number;
+    required_source_types: SourceItem["source_type"][];
+    required_questions: string[];
+  };
+  claim_taxonomy: string[];
+  expected_evidence_types: string[];
+  known_failure_modes: string[];
+  eval_rubric: {
+    min_scores: Record<string, number>;
+    required_diagnostics: string[];
+  };
+  memo_sections: string[];
+  benchmark: {
+    scenario: string;
+    expectation: string;
+  };
+};
+
 export type RunContext = {
   projectRoot: string;
   runDir: string;

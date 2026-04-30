@@ -1,0 +1,42 @@
+{
+  "schema_version": "crux.pack.v1",
+  "name": "strategic-tech",
+  "display_name": "Strategic Technology",
+  "version": "1.0.0",
+  "analysis_scope": "strategic-tech",
+  "description": "Evaluates strategic technology bets under uncertainty, incumbent pressure, and adoption risk.",
+  "input_template": {
+    "output_goal": "strategic technology decision memo",
+    "time_horizon": "12 months",
+    "risk_tolerance": "medium-high",
+    "known_constraints": [
+      "Separate category momentum from repeatable wedge.",
+      "Identify incumbent bundling pressure."
+    ]
+  },
+  "source_requirements": {
+    "min_sources": 5,
+    "required_source_types": ["web", "paper", "expert_input"],
+    "required_questions": [
+      "What adoption evidence supports the technology bet?",
+      "What implementation risk blocks repeatability?",
+      "What incumbent pressure could weaken the strategy?"
+    ]
+  },
+  "claim_taxonomy": ["market shift", "technical wedge", "adoption blocker", "incumbent pressure", "strategic decision"],
+  "expected_evidence_types": ["market report", "technical documentation", "adoption signal", "competitive pressure"],
+  "known_failure_modes": ["confusing hype with budget", "ignoring reliability constraints", "underestimating platform bundling"],
+  "eval_rubric": {
+    "min_scores": {
+      "faithfulness": 1,
+      "source_quality": 0.85,
+      "crux_quality": 1
+    },
+    "required_diagnostics": []
+  },
+  "memo_sections": ["Recommendation", "Core Reasoning", "Red-Team Findings", "Next Tests"],
+  "benchmark": {
+    "scenario": "e2e/scenarios/strategic-tech.yaml",
+    "expectation": "e2e/expectations/strategic-tech.json"
+  }
+}

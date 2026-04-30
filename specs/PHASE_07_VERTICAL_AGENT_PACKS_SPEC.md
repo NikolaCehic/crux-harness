@@ -1,5 +1,7 @@
 # Phase 7 Spec: Vertical Agent Packs
 
+Status: started. First implementation slice adds schema-validated `pack.json` manifests, seven initial vertical packs, pack discovery, custom-scope fallback, and CLI pack inspection.
+
 ## Purpose
 
 Turn the generic Crux harness into immediately useful specialized analysis agents.

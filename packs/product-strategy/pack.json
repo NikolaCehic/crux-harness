@@ -1,0 +1,42 @@
+{
+  "schema_version": "crux.pack.v1",
+  "name": "product-strategy",
+  "display_name": "Product Strategy",
+  "version": "1.0.0",
+  "analysis_scope": "product-strategy",
+  "description": "Evaluates product bets, wedges, adoption blockers, and validation paths.",
+  "input_template": {
+    "output_goal": "product strategy memo",
+    "time_horizon": "12 months",
+    "risk_tolerance": "medium",
+    "known_constraints": [
+      "Distinguish user pain from feature preference.",
+      "Identify the smallest test that changes the roadmap."
+    ]
+  },
+  "source_requirements": {
+    "min_sources": 3,
+    "required_source_types": ["expert_input", "dataset", "internal_document"],
+    "required_questions": [
+      "Which user segment has urgent pain?",
+      "What adoption blocker prevents usage?",
+      "What tradeoff will the roadmap make worse?"
+    ]
+  },
+  "claim_taxonomy": ["user pain", "adoption blocker", "differentiation", "roadmap tradeoff", "product decision"],
+  "expected_evidence_types": ["customer discovery", "usage data", "competitive table stakes", "capacity tradeoff"],
+  "known_failure_modes": ["confusing interest with adoption", "overbuilding before validation", "ignoring switching cost"],
+  "eval_rubric": {
+    "min_scores": {
+      "faithfulness": 1,
+      "crux_quality": 1,
+      "decision_usefulness": 1
+    },
+    "required_diagnostics": []
+  },
+  "memo_sections": ["Recommendation", "Key Claims", "Evidence Quality", "Next Tests"],
+  "benchmark": {
+    "scenario": "e2e/scenarios/product-strategy.yaml",
+    "expectation": "e2e/expectations/product-strategy.json"
+  }
+}

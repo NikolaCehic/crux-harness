@@ -4,6 +4,7 @@ import { Command } from "commander";
 import { runBenchmark, writeBenchmarkReport } from "./benchmark.js";
 import { checkReplayCompatibility, compareRuns, formatReplayCompatibility, formatRunComparison } from "./contracts.js";
 import { inspectRun } from "./inspect.js";
+import { formatPackInspection, formatPackList, loadPack, loadPacks } from "./packs.js";
 import { replayRun, rerunEvaluation, runHarness } from "./pipeline.js";
 import { addClaimReview, addEvidenceAnnotation, exportReviewedMemo, initReview } from "./review.js";
 import { writeRunReport } from "./run-report.js";
@@ -14,7 +15,7 @@ const program = new Command();
 program
   .name("crux")
   .description("Spec-driven harness for decision-grade analysis agents.")
-  .version("1.6.0");
+  .version("1.7.0");
 
 program
   .command("run")
@@ -142,6 +143,25 @@ review
   .action(async (runDir: string, options: { out?: string }) => {
     const output = await exportReviewedMemo(process.cwd(), runDir, options.out);
     console.log(`Reviewed memo written: ${output}`);
+  });
+
+const packs = program
+  .command("packs")
+  .description("Vertical pack utilities");
+
+packs
+  .command("list")
+  .description("List available vertical packs")
+  .action(async () => {
+    console.log(formatPackList(await loadPacks(process.cwd())));
+  });
+
+packs
+  .command("inspect")
+  .argument("<packName>", "Pack name")
+  .description("Inspect a vertical pack manifest")
+  .action(async (packName: string) => {
+    console.log(formatPackInspection(await loadPack(process.cwd(), path.join("packs", packName, "pack.json"))));
   });
 
 const sources = program

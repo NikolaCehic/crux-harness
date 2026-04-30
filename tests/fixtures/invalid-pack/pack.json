@@ -1,0 +1,5 @@
+{
+  "schema_version": "crux.pack.v1",
+  "name": "Invalid Pack",
+  "analysis_scope": "invalid-pack"
+}

@@ -1,0 +1,42 @@
+{
+  "schema_version": "crux.pack.v1",
+  "name": "market-entry",
+  "display_name": "Market Entry",
+  "version": "1.0.0",
+  "analysis_scope": "market-entry",
+  "description": "Evaluates whether a company should enter a new market and what would make the entry viable.",
+  "input_template": {
+    "output_goal": "market entry decision memo",
+    "time_horizon": "24 months",
+    "risk_tolerance": "medium",
+    "known_constraints": [
+      "Separate demand from distribution feasibility.",
+      "Identify regulatory or partner dependencies."
+    ]
+  },
+  "source_requirements": {
+    "min_sources": 3,
+    "required_source_types": ["web", "dataset", "expert_input"],
+    "required_questions": [
+      "What customer segment has urgent demand?",
+      "What distribution path is credible?",
+      "What regulatory or capital constraint can block entry?"
+    ]
+  },
+  "claim_taxonomy": ["market demand", "distribution wedge", "regulatory risk", "capital intensity", "entry decision"],
+  "expected_evidence_types": ["market sizing", "channel interviews", "regulatory review", "partner economics"],
+  "known_failure_modes": ["treating TAM as demand", "ignoring channel control", "underestimating local regulation"],
+  "eval_rubric": {
+    "min_scores": {
+      "faithfulness": 1,
+      "source_quality": 0.8,
+      "decision_usefulness": 1
+    },
+    "required_diagnostics": []
+  },
+  "memo_sections": ["Recommendation", "Core Reasoning", "Evidence Quality", "Next Tests"],
+  "benchmark": {
+    "scenario": "e2e/scenarios/market-entry.yaml",
+    "expectation": "e2e/expectations/market-entry.json"
+  }
+}
