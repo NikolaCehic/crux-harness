@@ -1,5 +1,7 @@
 # Phase 8 Spec: API, SDK, And Integrations
 
+Status: started. First implementation slice adds a local HTTP API server, TypeScript local SDK, and OpenAPI contract for run creation and artifact/eval retrieval.
+
 ## Purpose
 
 Let external products, CI systems, and agent runtimes use Crux without shelling directly into the CLI.

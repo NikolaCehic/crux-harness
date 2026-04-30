@@ -1,0 +1,105 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Crux Local API",
+    "version": "1.0.0",
+    "description": "Local API for creating Crux runs and reading run artifacts."
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "Server is healthy"
+          }
+        }
+      }
+    },
+    "/runs": {
+      "post": {
+        "summary": "Create a run",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["input"],
+                "properties": {
+                  "input": {
+                    "type": "string",
+                    "description": "Path to an input YAML file relative to the project root."
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Run created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["run_id", "run_dir"],
+                  "properties": {
+                    "run_id": { "type": "string" },
+                    "run_dir": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{runId}/eval": {
+      "get": {
+        "summary": "Fetch eval_report.json",
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Eval report"
+          }
+        }
+      }
+    },
+    "/runs/{runId}/artifacts/{artifactName}": {
+      "get": {
+        "summary": "Fetch a run artifact",
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "artifactName",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Artifact content"
+          },
+          "400": {
+            "description": "Invalid artifact path"
+          }
+        }
+      }
+    }
+  }
+}

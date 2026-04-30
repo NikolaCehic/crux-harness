@@ -114,6 +114,12 @@ npm run crux -- packs list
 npm run crux -- packs inspect product-strategy
 ```
 
+Start the local API server:
+
+```bash
+npm run crux -- api --host 127.0.0.1 --port 4317
+```
+
 Compare two runs:
 
 ```bash
@@ -187,6 +193,8 @@ Crux can also write a static HTML run inspector with `crux report <runDir>`. The
 Human review is captured in `review.json` as a sidecar artifact. Reviewers can approve or reject claims, annotate evidence, and export a reviewed memo that clearly separates human review from the original machine-generated memo.
 
 Vertical packs live under `packs/<pack-name>/pack.json`. Packs define source requirements, claim taxonomies, expected evidence, known failure modes, eval rubrics, memo sections, and benchmark links without hard-coding domains into the core harness.
+
+External systems can call Crux through the local API server or the TypeScript `CruxLocalSdk`. The first API slice supports creating runs, fetching JSON/text artifacts, and fetching eval reports from the same contracts used by the CLI.
 
 Crux includes optional LLM claim and evidence mappers behind the same validation boundary. Deterministic mapping remains the default. To opt in manually, set:
 

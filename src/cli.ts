@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import path from "node:path";
 import { Command } from "commander";
+import { createCruxApiServer } from "./api.js";
 import { runBenchmark, writeBenchmarkReport } from "./benchmark.js";
 import { checkReplayCompatibility, compareRuns, formatReplayCompatibility, formatRunComparison } from "./contracts.js";
 import { inspectRun } from "./inspect.js";
@@ -15,7 +16,7 @@ const program = new Command();
 program
   .name("crux")
   .description("Spec-driven harness for decision-grade analysis agents.")
-  .version("1.7.0");
+  .version("1.8.0");
 
 program
   .command("run")
@@ -64,6 +65,23 @@ program
     if (!report.passed) {
       process.exitCode = 1;
     }
+  });
+
+program
+  .command("api")
+  .option("--host <host>", "Host", "127.0.0.1")
+  .option("--port <port>", "Port", "4317")
+  .description("Start the local Crux API server")
+  .action(async (options: { host: string; port: string }) => {
+    const port = Number.parseInt(options.port, 10);
+    if (Number.isNaN(port) || port < 0) {
+      throw new Error("--port must be a non-negative integer");
+    }
+
+    const server = createCruxApiServer(process.cwd());
+    server.listen(port, options.host, () => {
+      console.log(`Crux API listening on http://${options.host}:${port}`);
+    });
   });
 
 program

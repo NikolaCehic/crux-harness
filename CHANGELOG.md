@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.8.0 - 2026-04-30
+
+- Added a dependency-free local HTTP API server.
+- Added `POST /runs`, `GET /runs/{runId}/eval`, and `GET /runs/{runId}/artifacts/{artifactName}`.
+- Added `CruxLocalSdk` for creating runs and reading artifacts without shelling into the CLI.
+- Added tests for API run creation, eval fetching, artifact fetching, path traversal rejection, and SDK behavior.
+
 ## 1.7.0 - 2026-04-30
 
 - Added `pack.json` schema validation for vertical agent packs.
