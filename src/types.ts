@@ -222,7 +222,17 @@ export type EvalReport = {
   findings: string[];
   failed_checks: string[];
   improvement_recommendations: string[];
+  diagnostics: EvalDiagnostic[];
   council: EvalCouncilReport;
+};
+
+export type EvalDiagnostic = {
+  id: string;
+  stage: string;
+  severity: "low" | "medium" | "high";
+  category: string;
+  message: string;
+  recommended_fix: string;
 };
 
 export type EvalCouncilStatus = "pass" | "warn" | "fail";

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.1 - 2026-04-30
+
+- Added structured eval diagnostics with stage, severity, category, message, and recommended fix fields.
+- Added diagnostics for missing claim evidence, vague uncertainty, weak red-team output, and memo faithfulness failures.
+- Updated uncertainty quality scoring to detect vague placeholder language without regressing healthy benchmark runs.
+- Added inspect output for diagnostics when a run has actionable eval failures.
+
 ## 1.4.0 - 2026-04-30
 
 - Added a deterministic evaluator council to `eval_report.json`.

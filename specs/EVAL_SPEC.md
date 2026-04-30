@@ -121,6 +121,16 @@ Whether the final memo helps a user make or defer a decision.
   "findings": [],
   "failed_checks": [],
   "improvement_recommendations": [],
+  "diagnostics": [
+    {
+      "id": "D1",
+      "stage": "gather_evidence",
+      "severity": "high",
+      "category": "missing_evidence_coverage",
+      "message": "Claim C2 is supported but has no supporting or challenging evidence IDs.",
+      "recommended_fix": "Map at least one evidence item to claim C2, or downgrade the claim status."
+    }
+  ],
   "council": {
     "schema_version": "crux.eval_council.v1",
     "reviewers": [],

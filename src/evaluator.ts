@@ -3,6 +3,7 @@ import path from "node:path";
 import type {
   ClaimsArtifact,
   ContradictionsArtifact,
+  EvalDiagnostic,
   EvalReport,
   EvidenceArtifact,
   QuestionSpec,
@@ -34,6 +35,7 @@ export async function evaluateRun(projectRoot: string, runDir: string): Promise<
   const validationFailures = await validateLoadedRun(validator, loaded);
   const claimGraphFailures = findClaimGraphFailures(loaded.claims, loaded.evidence, loaded.contradictions);
   const faithfulness = analyzeFaithfulness(loaded);
+  const uncertaintyAnalysis = analyzeUncertainty(loaded.uncertainty);
   const failedChecks = [...loaded.failedChecks, ...validationFailures, ...claimGraphFailures, ...faithfulness.failures];
 
   const scores = {
@@ -50,7 +52,7 @@ export async function evaluateRun(projectRoot: string, runDir: string): Promise<
       "## Missing Evidence",
       "## Recommendation Impact"
     ]),
-    uncertainty_quality: scoreUncertainty(loaded.uncertainty),
+    uncertainty_quality: uncertaintyAnalysis.score,
     faithfulness: faithfulness.score,
     crux_quality: scoreCruxQuality(loaded),
     decision_usefulness: scoreMarkdownSections(loaded.decisionMemo, [
@@ -68,6 +70,7 @@ export async function evaluateRun(projectRoot: string, runDir: string): Promise<
 
   const findings = buildFindings(loaded, failedChecks, faithfulness.findings);
   const improvement_recommendations = buildRecommendations(loaded, failedChecks);
+  const diagnostics = buildDiagnostics(loaded, failedChecks, uncertaintyAnalysis.failures, scores);
   const council = buildEvalCouncil({
     ...loaded,
     scores,
@@ -79,6 +82,7 @@ export async function evaluateRun(projectRoot: string, runDir: string): Promise<
     findings,
     failed_checks: failedChecks,
     improvement_recommendations,
+    diagnostics,
     council
   };
 }
@@ -277,16 +281,73 @@ function scoreContradictions(contradictions?: ContradictionsArtifact): number {
   return round((contradictionScore + unsupportedScore + missingEvidenceScore) / 3);
 }
 
-function scoreUncertainty(uncertainty?: UncertaintyArtifact): number {
+function analyzeUncertainty(uncertainty?: UncertaintyArtifact): { score: number; failures: string[] } {
   if (!uncertainty) {
-    return 0;
+    return {
+      score: 0,
+      failures: ["uncertainty: uncertainty artifact is missing."]
+    };
   }
 
   const keyScore = Math.min(uncertainty.key_uncertainties.length / 5, 1);
   const sensitivityScore = Math.min(uncertainty.sensitivity.length / 2, 1);
   const changeScore = Math.min(uncertainty.what_would_change_my_mind.length / 5, 1);
   const testsScore = Math.min(uncertainty.recommended_tests.length / 5, 1);
-  return round((keyScore + sensitivityScore + changeScore + testsScore) / 4);
+  const structuralScore = (keyScore + sensitivityScore + changeScore + testsScore) / 4;
+  const specificity = scoreUncertaintySpecificity(uncertainty);
+  const failures = specificity < 0.65
+    ? [`uncertainty: entries are too vague to guide a decision (specificity ${specificity}).`]
+    : [];
+
+  return {
+    score: round(structuralScore * 0.5 + specificity * 0.5),
+    failures
+  };
+}
+
+function scoreUncertaintySpecificity(uncertainty: UncertaintyArtifact): number {
+  const fields = [
+    ...uncertainty.key_uncertainties.map((item) => {
+      return `${item.description} ${item.current_estimate} ${item.impact_if_wrong} ${item.evidence_needed}`;
+    }),
+    ...uncertainty.sensitivity.map((item) => {
+      return `${item.assumption} ${item.low_case} ${item.base_case} ${item.high_case} ${item.decision_impact}`;
+    }),
+    ...uncertainty.what_would_change_my_mind,
+    ...uncertainty.recommended_tests
+  ];
+
+  if (fields.length === 0) {
+    return 0;
+  }
+
+  const specificCount = fields.filter(isSpecificText).length;
+  return round(specificCount / fields.length);
+}
+
+function isSpecificText(value: string): boolean {
+  const normalized = normalizeText(value);
+  const vagueValues = new Set([
+    "bad",
+    "more",
+    "more data",
+    "need data",
+    "research",
+    "tbd",
+    "todo",
+    "unknown",
+    "unsure",
+    "n a",
+    "na"
+  ]);
+
+  if (vagueValues.has(normalized)) {
+    return false;
+  }
+
+  const vagueTokens = new Set(["bad", "data", "more", "research", "tbd", "todo", "unknown", "unsure"]);
+  const meaningfulTokens = tokenize(value).filter((token) => !vagueTokens.has(token));
+  return meaningfulTokens.length >= 4;
 }
 
 function analyzeFaithfulness(loaded: LoadedRun): { score: number; failures: string[]; findings: string[] } {
@@ -422,6 +483,154 @@ function buildRecommendations(loaded: LoadedRun, failedChecks: string[]): string
   recommendations.push("Compare eval scores across harness versions before changing prompts or mappers.");
 
   return recommendations;
+}
+
+function buildDiagnostics(
+  loaded: LoadedRun,
+  failedChecks: string[],
+  uncertaintyFailures: string[],
+  scores: EvalReport["scores"]
+): EvalDiagnostic[] {
+  const diagnostics: Omit<EvalDiagnostic, "id">[] = [];
+
+  for (const failure of failedChecks) {
+    diagnostics.push({
+      stage: stageForFailure(failure),
+      severity: severityForFailure(failure),
+      category: categoryForFailure(failure),
+      message: failure,
+      recommended_fix: fixForFailure(failure)
+    });
+  }
+
+  for (const claim of missingEvidenceClaims(loaded.claims)) {
+    diagnostics.push({
+      stage: "gather_evidence",
+      severity: claim.importance >= 0.75 ? "high" : "medium",
+      category: "missing_evidence_coverage",
+      message: `Claim ${claim.id} is ${claim.status} but has no supporting or challenging evidence IDs.`,
+      recommended_fix: `Map at least one evidence item to claim ${claim.id}, or downgrade the claim status to unsupported or unknown.`
+    });
+  }
+
+  if (loaded.redTeam && scores.red_team_strength < 0.65) {
+    diagnostics.push({
+      stage: "red_team",
+      severity: "high",
+      category: "weak_red_team",
+      message: `Red-team strength score is ${scores.red_team_strength}, below the failure threshold.`,
+      recommended_fix: "Add concrete counterarguments, failure modes, missing evidence, and recommendation impact."
+    });
+  }
+
+  for (const failure of uncertaintyFailures) {
+    diagnostics.push({
+      stage: "model_uncertainty",
+      severity: "high",
+      category: "vague_uncertainty",
+      message: failure,
+      recommended_fix: "Rewrite uncertainties with specific assumptions, impact if wrong, evidence needed, and decision-changing tests."
+    });
+  }
+
+  return dedupeDiagnostics(diagnostics).map((diagnostic, index) => ({
+    id: `D${index + 1}`,
+    ...diagnostic
+  }));
+}
+
+function missingEvidenceClaims(claims?: ClaimsArtifact): ClaimsArtifact["claims"] {
+  return claims?.claims.filter((claim) => {
+    return claim.evidence_ids.length === 0
+      && claim.counterevidence_ids.length === 0
+      && !["unsupported", "unknown"].includes(claim.status);
+  }) ?? [];
+}
+
+function dedupeDiagnostics(diagnostics: Array<Omit<EvalDiagnostic, "id">>): Array<Omit<EvalDiagnostic, "id">> {
+  const seen = new Set<string>();
+  const deduped: Array<Omit<EvalDiagnostic, "id">> = [];
+
+  for (const diagnostic of diagnostics) {
+    const key = `${diagnostic.stage}\n${diagnostic.category}\n${diagnostic.message}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      deduped.push(diagnostic);
+    }
+  }
+
+  return deduped;
+}
+
+function stageForFailure(failure: string): string {
+  const normalized = failure.toLowerCase();
+  if (normalized.includes("faithfulness")) {
+    return "write_decision_memo";
+  }
+  if (normalized.includes("claim graph") || normalized.includes("claims.json")) {
+    return "build_claim_graph";
+  }
+  if (normalized.includes("evidence")) {
+    return "gather_evidence";
+  }
+  if (normalized.includes("uncertainty")) {
+    return "model_uncertainty";
+  }
+  if (normalized.includes("red_team")) {
+    return "red_team";
+  }
+  if (normalized.includes("source_inventory") || normalized.includes("source_chunks")) {
+    return "ingest_sources";
+  }
+  if (normalized.includes("question_spec")) {
+    return "normalize_question";
+  }
+  return "evaluate";
+}
+
+function categoryForFailure(failure: string): string {
+  const normalized = failure.toLowerCase();
+  if (normalized.includes("faithfulness")) {
+    return "faithfulness";
+  }
+  if (normalized.includes("claim graph")) {
+    return "claim_graph";
+  }
+  if (normalized.includes("failed schema validation") || normalized.includes("could not read")) {
+    return "artifact_contract";
+  }
+  if (normalized.includes("uncertainty")) {
+    return "vague_uncertainty";
+  }
+  return "evaluation_failure";
+}
+
+function severityForFailure(failure: string): EvalDiagnostic["severity"] {
+  const normalized = failure.toLowerCase();
+  if (normalized.includes("faithfulness") || normalized.includes("claim graph") || normalized.includes("could not read")) {
+    return "high";
+  }
+  if (normalized.includes("failed schema validation")) {
+    return "high";
+  }
+  return "medium";
+}
+
+function fixForFailure(failure: string): string {
+  const category = categoryForFailure(failure);
+  if (category === "faithfulness") {
+    return "Rewrite memo claims so each conclusion maps back to claims.json and cited evidence.";
+  }
+  if (category === "claim_graph") {
+    return "Repair claim IDs, roots, dependencies, and evidence references before trusting the run.";
+  }
+  if (category === "artifact_contract") {
+    return "Regenerate or repair the missing or schema-invalid artifact.";
+  }
+  if (category === "vague_uncertainty") {
+    return "Rewrite uncertainties with specific assumptions, impacts, evidence needs, and next tests.";
+  }
+  return "Inspect the failing stage output and rerun evaluation after repair.";
 }
 
 function extractSectionBullets(markdown: string, heading: string): string[] {

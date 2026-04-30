@@ -139,7 +139,7 @@ npm run crux -- benchmark --regression-threshold 0.05
 
 ## Current Implementation
 
-Crux v1.4 is a product-grade local harness for auditable, source-grounded analysis-agent runs. It remains deterministic by default, with optional LLM mappers behind strict schemas and provenance checks.
+Crux v1.4.1 is a product-grade local harness for auditable, source-grounded analysis-agent runs. It remains deterministic by default, with optional LLM mappers behind strict schemas and provenance checks.
 
 Every run writes `run_config.json`, which locks the harness version, input hash, source policy, budgets, mapper selection, and prompt versions.
 
@@ -158,6 +158,8 @@ Source-pack runs cite stable chunk IDs like `S1#chunk-001`, and integrity checks
 The evaluator includes schema validity, claim graph integrity, claim coverage, evidence traceability, source quality, contradiction handling, red-team strength, uncertainty quality, faithfulness, crux quality, and decision usefulness.
 
 `eval_report.json` also includes a deterministic evaluator council. The council preserves specialist reviewer outputs for evidence, claim graph quality, faithfulness, red-team strength, uncertainty, decision utility, domain fit, and synthesis. The synthesis judge reports pass/warn/fail status, blocking failures, next fixes, and preserved disagreements instead of hiding everything in one score.
+
+Eval reports include structured diagnostics with stage, severity, category, message, and recommended fix fields so users can see whether a failure came from evidence gathering, claim graph construction, memo writing, uncertainty modeling, red teaming, or evaluation itself.
 
 Crux includes optional LLM claim and evidence mappers behind the same validation boundary. Deterministic mapping remains the default. To opt in manually, set:
 

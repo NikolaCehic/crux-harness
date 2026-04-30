@@ -3,7 +3,7 @@
   "$id": "https://crux.local/schemas/eval_report.schema.json",
   "title": "EvalReport",
   "type": "object",
-  "required": ["scores", "findings", "failed_checks", "improvement_recommendations", "council"],
+  "required": ["scores", "findings", "failed_checks", "improvement_recommendations", "diagnostics", "council"],
   "properties": {
     "scores": {
       "type": "object",
@@ -46,6 +46,22 @@
     "improvement_recommendations": {
       "type": "array",
       "items": { "type": "string" }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "stage", "severity", "category", "message", "recommended_fix"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^D[0-9]+$" },
+          "stage": { "type": "string", "minLength": 1 },
+          "severity": { "enum": ["low", "medium", "high"] },
+          "category": { "type": "string", "minLength": 1 },
+          "message": { "type": "string", "minLength": 1 },
+          "recommended_fix": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
     },
     "council": {
       "type": "object",

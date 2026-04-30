@@ -295,6 +295,7 @@ Required fields:
 - `findings`
 - `failed_checks`
 - `improvement_recommendations`
+- `diagnostics`
 - `council`
 
 Required score dimensions:
@@ -328,6 +329,15 @@ Required council reviewer roles:
 - `decision_utility_auditor`
 - `domain_reviewer`
 - `synthesis_judge`
+
+Required diagnostic fields:
+
+- `id`
+- `stage`
+- `severity`
+- `category`
+- `message`
+- `recommended_fix`
 
 ## trace.jsonl
 

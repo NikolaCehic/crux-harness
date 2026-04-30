@@ -344,6 +344,7 @@ export function buildInitialEvalReport(): EvalReport {
       "Add evaluator checks that compare memo claims against claim IDs.",
       "Add golden benchmark tasks before tuning agent prompts."
     ],
+    diagnostics: [],
     council: buildEvalCouncil({ scores, failedChecks })
   };
 }

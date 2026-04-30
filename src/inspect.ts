@@ -38,6 +38,11 @@ export async function inspectRun(projectRoot: string, runDir: string): Promise<s
     `Council: ${evalReport.council.synthesis.status} (${evalReport.council.synthesis.confidence})`,
     "Council reviewers:",
     councilReviewLines,
+    ...(evalReport.diagnostics.length > 0
+      ? ["Diagnostics:", ...evalReport.diagnostics.map((diagnostic) => {
+          return `  - [${diagnostic.severity}] ${diagnostic.stage}/${diagnostic.category}: ${diagnostic.message}`;
+        })]
+      : []),
     ...(integrity.failures.length > 0 ? ["Failures:", ...integrity.failures.map((failure) => `  - ${failure}`)] : [])
   ].join("\n");
 }
