@@ -12,6 +12,7 @@
     "source_policy",
     "source_pack",
     "budgets",
+    "artifact_contract",
     "mappers",
     "stages",
     "prompts"
@@ -40,6 +41,28 @@
         "max_research_items": { "type": ["integer", "null"], "minimum": 0 },
         "max_agent_steps": { "type": ["integer", "null"], "minimum": 0 },
         "max_llm_calls": { "type": ["integer", "null"], "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "artifact_contract": {
+      "type": "object",
+      "required": ["schema_version", "artifacts"],
+      "properties": {
+        "schema_version": { "type": "string", "const": "crux.artifact_contract.v1" },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "version", "required"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "version": { "type": "string", "minLength": 1 },
+              "schema_id": { "type": "string" },
+              "required": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          }
+        }
       },
       "additionalProperties": false
     },

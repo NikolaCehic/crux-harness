@@ -39,6 +39,15 @@ export type RunConfig = {
     max_agent_steps: number | null;
     max_llm_calls: number | null;
   };
+  artifact_contract: {
+    schema_version: "crux.artifact_contract.v1";
+    artifacts: Array<{
+      name: string;
+      version: string;
+      schema_id?: string;
+      required: boolean;
+    }>;
+  };
   mappers: {
     claim_decomposer: {
       type: "deterministic" | "llm";

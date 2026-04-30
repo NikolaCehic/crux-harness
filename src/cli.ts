@@ -2,6 +2,7 @@
 import path from "node:path";
 import { Command } from "commander";
 import { runBenchmark, writeBenchmarkReport } from "./benchmark.js";
+import { checkReplayCompatibility, compareRuns, formatReplayCompatibility, formatRunComparison } from "./contracts.js";
 import { inspectRun } from "./inspect.js";
 import { replayRun, rerunEvaluation, runHarness } from "./pipeline.js";
 import { importSources } from "./source-importer.js";
@@ -11,7 +12,7 @@ const program = new Command();
 program
   .name("crux")
   .description("Spec-driven harness for decision-grade analysis agents.")
-  .version("1.2.1");
+  .version("1.3.0");
 
 program
   .command("run")
@@ -96,6 +97,15 @@ sources
   });
 
 program
+  .command("diff")
+  .argument("<leftRunDir>", "Path to the first run directory")
+  .argument("<rightRunDir>", "Path to the second run directory")
+  .description("Compare two Crux runs for contract-level differences")
+  .action(async (leftRunDir: string, rightRunDir: string) => {
+    console.log(formatRunComparison(await compareRuns(process.cwd(), leftRunDir, rightRunDir)));
+  });
+
+program
   .command("eval")
   .argument("<runDir>", "Path to a run directory")
   .description("Re-evaluate an existing run and write eval_report.json")
@@ -107,8 +117,18 @@ program
 program
   .command("replay")
   .argument("<runDir>", "Path to a previous run directory")
+  .option("--check", "Check whether the run can be replayed without creating a new run")
   .description("Replay a run using its copied input.yaml")
-  .action(async (runDir: string) => {
+  .action(async (runDir: string, options: { check?: boolean }) => {
+    if (options.check) {
+      const report = await checkReplayCompatibility(process.cwd(), runDir);
+      console.log(formatReplayCompatibility(report));
+      if (!report.compatible) {
+        process.exitCode = 1;
+      }
+      return;
+    }
+
     const result = await replayRun(process.cwd(), runDir);
     console.log(`Replay complete: ${path.relative(process.cwd(), result.runDir)}`);
   });

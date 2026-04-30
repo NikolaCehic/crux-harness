@@ -1,5 +1,7 @@
 # Phase 3 Spec: Harness Contract Layer
 
+Status: started. The first implementation slice adds artifact contract metadata, replay compatibility checks, run comparison utilities, and CLI commands for replay checks and diffs.
+
 ## Purpose
 
 Strengthen Crux run contracts so prompt, model, source, tool, and artifact changes can be replayed, compared, and explained.

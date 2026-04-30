@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.0 - 2026-04-30
+
+- Added artifact contract metadata to `run_config.json`.
+- Added replay compatibility checks with copied input hash verification.
+- Added run comparison utilities that ignore run identity fields but detect prompt, source, budget, mapper, stage, and artifact-contract drift.
+- Added `crux replay --check <runDir>`.
+- Added `crux diff <leftRunDir> <rightRunDir>`.
+
 ## 1.2.1 - 2026-04-30
 
 - Added typed executable stage adapters for all current pipeline stages.

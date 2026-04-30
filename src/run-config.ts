@@ -5,8 +5,9 @@ import type { ClaimDecomposerSelection } from "./claim-decomposer.js";
 import type { EvidenceMapperSelection } from "./llm.js";
 import type { StageModule } from "./stages/types.js";
 import type { RunConfig, RunInput } from "./types.js";
+import { schemaIds } from "./validator.js";
 
-export const HARNESS_VERSION = "1.2.1";
+export const HARNESS_VERSION = "1.3.0";
 
 export type BuildRunConfigInput = {
   projectRoot: string;
@@ -39,6 +40,7 @@ export async function buildRunConfig(options: BuildRunConfigInput): Promise<RunC
       max_agent_steps: options.input.tool_budget?.max_agent_steps ?? null,
       max_llm_calls: options.input.model_budget?.max_llm_calls ?? null
     },
+    artifact_contract: buildArtifactContract(),
     mappers: {
       claim_decomposer: options.claimDecomposer,
       evidence_mapper: options.evidenceMapper
@@ -58,6 +60,36 @@ export async function buildRunConfig(options: BuildRunConfigInput): Promise<RunC
       claim_decomposer: "claim-decomposer.v1",
       evidence_mapper: "evidence-mapper.v1"
     }
+  };
+}
+
+function buildArtifactContract(): RunConfig["artifact_contract"] {
+  return {
+    schema_version: "crux.artifact_contract.v1",
+    artifacts: [
+      artifact("input.yaml"),
+      artifact("run_config.json", schemaIds.runConfig),
+      artifact("question_spec.json", schemaIds.questionSpec),
+      artifact("source_inventory.json", schemaIds.sourceInventory),
+      artifact("source_chunks.json", schemaIds.sourceChunks),
+      artifact("claims.json", schemaIds.claims),
+      artifact("evidence.json", schemaIds.evidence),
+      artifact("contradictions.json", schemaIds.contradictions),
+      artifact("red_team.md"),
+      artifact("uncertainty.json", schemaIds.uncertainty),
+      artifact("decision_memo.md"),
+      artifact("eval_report.json", schemaIds.evalReport),
+      artifact("trace.jsonl")
+    ]
+  };
+}
+
+function artifact(name: string, schemaId?: string): RunConfig["artifact_contract"]["artifacts"][number] {
+  return {
+    name,
+    version: "1.0.0",
+    ...(schemaId ? { schema_id: schemaId } : {}),
+    required: true
   };
 }
 
