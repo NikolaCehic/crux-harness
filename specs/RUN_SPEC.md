@@ -52,11 +52,30 @@ Responsibilities:
 - define success criteria
 - identify initial unknowns
 
-### 3. Build Initial Claim Graph
+### 3. Ingest Sources
+
+Inputs:
+
+- `input.yaml`
+
+Outputs:
+
+- `source_inventory.json`
+
+Responsibilities:
+
+- resolve the optional source pack
+- inventory local source files
+- preserve source citations and URLs
+- compute content hashes
+- validate source metadata
+
+### 4. Build Initial Claim Graph
 
 Inputs:
 
 - `question_spec.json`
+- `source_inventory.json`
 
 Outputs:
 
@@ -69,12 +88,13 @@ Responsibilities:
 - assign initial claim types and importance
 - identify dependencies
 
-### 4. Gather Evidence
+### 5. Gather Evidence
 
 Inputs:
 
 - `question_spec.json`
 - `claims.json`
+- `source_inventory.json`
 
 Outputs:
 
@@ -87,7 +107,7 @@ Responsibilities:
 - map evidence to claim IDs
 - score source reliability and relevance
 
-### 5. Verify Claims
+### 6. Verify Claims
 
 Inputs:
 
@@ -106,7 +126,7 @@ Responsibilities:
 - detect conflicting evidence
 - recommend evidence gaps to close
 
-### 6. Red Team
+### 7. Red Team
 
 Inputs:
 
@@ -126,7 +146,7 @@ Responsibilities:
 - identify missing evidence
 - estimate impact on the recommendation
 
-### 7. Model Uncertainty
+### 8. Model Uncertainty
 
 Inputs:
 
@@ -147,7 +167,7 @@ Responsibilities:
 - define what would change the conclusion
 - propose cheap tests
 
-### 8. Write Decision Memo
+### 9. Write Decision Memo
 
 Inputs:
 
@@ -164,7 +184,7 @@ Responsibilities:
 - include red-team and uncertainty caveats
 - name next tests
 
-### 9. Evaluate
+### 10. Evaluate
 
 Inputs:
 
@@ -193,13 +213,15 @@ Every stage must:
 
 ## Source Policy
 
-v0.1 supports three source modes:
+v0.2 supports three source modes:
 
 - `offline`: use only provided docs and examples
 - `web`: allow live web research
 - `hybrid`: use provided docs first, web second
 
 The default for early development is `offline` or curated examples, so harness behavior can be tested before relying on live search.
+
+Offline source-pack mode is the first supported grounding mechanism. Inputs may point at a local `source_pack`, and the harness writes `source_inventory.json` before evidence generation.
 
 ## Replay Policy
 
@@ -213,4 +235,3 @@ A replay should preserve:
 - prompts or agent configs
 
 Replay may not produce byte-identical outputs when external models are used, but it should produce comparable artifacts and evaluation scores.
-

@@ -7,6 +7,7 @@ import type {
   EvalReport,
   EvidenceArtifact,
   QuestionSpec,
+  SourceInventory,
   TraceEvent,
   UncertaintyArtifact
 } from "./types.js";
@@ -20,6 +21,7 @@ export type IntegrityReport = {
 const requiredFiles = [
   "input.yaml",
   "question_spec.json",
+  "source_inventory.json",
   "claims.json",
   "evidence.json",
   "contradictions.json",
@@ -32,6 +34,7 @@ const requiredFiles = [
 
 const expectedStages = [
   "normalize_question",
+  "ingest_sources",
   "build_claim_graph",
   "gather_evidence",
   "verify_claims",
@@ -53,6 +56,7 @@ export async function validateRunIntegrity(projectRoot: string, runDir: string):
 
   const validator = new ArtifactValidator(path.join(projectRoot, "schemas"));
   const questionSpec = await readJson<QuestionSpec>(absoluteRunDir, "question_spec.json", failures);
+  const sourceInventory = await readJson<SourceInventory>(absoluteRunDir, "source_inventory.json", failures);
   const claims = await readJson<ClaimsArtifact>(absoluteRunDir, "claims.json", failures);
   const evidence = await readJson<EvidenceArtifact>(absoluteRunDir, "evidence.json", failures);
   const contradictions = await readJson<ContradictionsArtifact>(absoluteRunDir, "contradictions.json", failures);
@@ -63,6 +67,7 @@ export async function validateRunIntegrity(projectRoot: string, runDir: string):
   const traceLines = await readTrace(absoluteRunDir, failures);
 
   await validateSchema(validator, schemaIds.questionSpec, "question_spec.json", questionSpec, failures);
+  await validateSchema(validator, schemaIds.sourceInventory, "source_inventory.json", sourceInventory, failures);
   await validateSchema(validator, schemaIds.claims, "claims.json", claims, failures);
   await validateSchema(validator, schemaIds.evidence, "evidence.json", evidence, failures);
   await validateSchema(validator, schemaIds.contradictions, "contradictions.json", contradictions, failures);
@@ -71,6 +76,10 @@ export async function validateRunIntegrity(projectRoot: string, runDir: string):
 
   if (claims && evidence && contradictions) {
     validateClaimEvidenceGraph(claims, evidence, contradictions, failures);
+  }
+
+  if (sourceInventory && evidence) {
+    validateSourceProvenance(projectRoot, sourceInventory, evidence, failures);
   }
 
   if (uncertainty) {
@@ -113,6 +122,41 @@ export async function validateRunIntegrity(projectRoot: string, runDir: string):
   }
 
   return { valid: failures.length === 0, failures };
+}
+
+function validateSourceProvenance(
+  projectRoot: string,
+  sourceInventory: SourceInventory,
+  evidenceArtifact: EvidenceArtifact,
+  failures: string[]
+): void {
+  const sourceIds = new Set(sourceInventory.sources.map((source) => source.id));
+
+  for (const source of sourceInventory.sources) {
+    if (!existsSync(path.resolve(projectRoot, source.path))) {
+      failures.push(`source_inventory.json references missing source file: ${source.path}`);
+    }
+  }
+
+  for (const item of evidenceArtifact.evidence) {
+    for (const sourceId of item.source_ids ?? []) {
+      assertKnown(sourceId, sourceIds, `Evidence ${item.id} references unknown source ${sourceId}.`, failures);
+    }
+  }
+
+  if (sourceInventory.sources.length === 0) {
+    return;
+  }
+
+  for (const item of evidenceArtifact.evidence) {
+    if (item.limitations.toLowerCase().includes("placeholder")) {
+      failures.push(`Evidence ${item.id} uses placeholder limitations in source-grounded mode.`);
+    }
+
+    if (item.source_type !== "calculation" && (item.source_ids ?? []).length === 0) {
+      failures.push(`Evidence ${item.id} is source-backed mode evidence but has no source_ids.`);
+    }
+  }
 }
 
 async function validateSchema(
@@ -262,4 +306,3 @@ function assertKnown(id: string, knownIds: Set<string>, message: string, failure
     failures.push(message);
   }
 }
-

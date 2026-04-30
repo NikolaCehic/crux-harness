@@ -10,5 +10,5 @@ known_constraints:
   - "Small team with strong engineering ability but limited enterprise sales capacity."
   - "Must reach credible customer traction within 12 months."
 source_policy: "offline"
+source_pack: "sources/strategic-tech"
 user_prior: "Enterprise agent platforms are attractive but may be crowded and distribution-heavy."
-

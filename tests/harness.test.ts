@@ -15,6 +15,7 @@ test("runHarness creates a complete, schema-valid deterministic run", async () =
   for (const file of [
     "input.yaml",
     "question_spec.json",
+    "source_inventory.json",
     "claims.json",
     "evidence.json",
     "contradictions.json",
@@ -33,13 +34,17 @@ test("runHarness creates a complete, schema-valid deterministic run", async () =
 
   const evidence = JSON.parse(await readFile(path.join(result.runDir, "evidence.json"), "utf8"));
   assert.equal(evidence.evidence.length, 8);
+  assert.equal(evidence.evidence.filter((item: { source_ids?: string[] }) => (item.source_ids ?? []).length > 0).length >= 5, true);
+
+  const sourceInventory = JSON.parse(await readFile(path.join(result.runDir, "source_inventory.json"), "utf8"));
+  assert.equal(sourceInventory.sources.length, 5);
 
   const evalReport = JSON.parse(await readFile(path.join(result.runDir, "eval_report.json"), "utf8"));
   assert.equal(evalReport.scores.schema_validity, 1);
   assert.deepEqual(evalReport.failed_checks, []);
 
   const traceLines = readFileSync(path.join(result.runDir, "trace.jsonl"), "utf8").trim().split("\n");
-  assert.equal(traceLines.length, 16);
+  assert.equal(traceLines.length, 18);
 
   const integrity = await validateRunIntegrity(projectRoot, result.runDir);
   assert.deepEqual(integrity.failures, []);

@@ -1,6 +1,6 @@
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { ClaimsArtifact, EvalReport, EvidenceArtifact } from "./types.js";
+import type { ClaimsArtifact, EvalReport, EvidenceArtifact, SourceInventory } from "./types.js";
 import { validateRunIntegrity } from "./integrity.js";
 import { runHarness } from "./pipeline.js";
 
@@ -13,6 +13,9 @@ export type BenchmarkExpectation = {
   required_terms: string[];
   required_memo_sections: string[];
   required_red_team_sections: string[];
+  requires_source_pack?: boolean;
+  forbid_placeholder_evidence?: boolean;
+  min_source_backed_evidence?: number;
   min_scores: Record<string, number>;
 };
 
@@ -26,6 +29,8 @@ export type BenchmarkScenarioResult = {
     claims: number;
     evidence: number;
     contradictions: number;
+    sources: number;
+    source_backed_evidence: number;
   };
   failures: string[];
   regressions: string[];
@@ -148,10 +153,11 @@ export type BenchmarkExpectationResult = {
 
 export async function checkBenchmarkExpectation(runDir: string, expectation: BenchmarkExpectation): Promise<BenchmarkExpectationResult> {
   const failures: string[] = [];
-  const [claims, evidence, contradictions, memo, redTeam, evalReport, questionSpec] = await Promise.all([
+  const [claims, evidence, contradictions, sourceInventory, memo, redTeam, evalReport, questionSpec] = await Promise.all([
     readJson<ClaimsArtifact>(runDir, "claims.json"),
     readJson<EvidenceArtifact>(runDir, "evidence.json"),
     readJson<{ contradictions: unknown[] }>(runDir, "contradictions.json"),
+    readJson<SourceInventory>(runDir, "source_inventory.json"),
     readText(runDir, "decision_memo.md"),
     readText(runDir, "red_team.md"),
     readJson<EvalReport>(runDir, "eval_report.json"),
@@ -168,6 +174,24 @@ export async function checkBenchmarkExpectation(runDir: string, expectation: Ben
 
   if (contradictions.contradictions.length < expectation.min_contradictions) {
     failures.push(`${expectation.scenario_id}: expected at least ${expectation.min_contradictions} contradictions, got ${contradictions.contradictions.length}.`);
+  }
+
+  if (expectation.requires_source_pack && sourceInventory.sources.length === 0) {
+    failures.push(`${expectation.scenario_id}: expected a non-empty source pack.`);
+  }
+
+  const sourceBackedEvidence = evidence.evidence.filter((item) => (item.source_ids ?? []).length > 0).length;
+  if (expectation.min_source_backed_evidence !== undefined && sourceBackedEvidence < expectation.min_source_backed_evidence) {
+    failures.push(`${expectation.scenario_id}: expected at least ${expectation.min_source_backed_evidence} source-backed evidence items, got ${sourceBackedEvidence}.`);
+  }
+
+  if (expectation.forbid_placeholder_evidence) {
+    const placeholderEvidence = evidence.evidence.filter((item) => {
+      return [item.citation, item.summary, item.limitations].join("\n").toLowerCase().includes("placeholder");
+    });
+    if (placeholderEvidence.length > 0) {
+      failures.push(`${expectation.scenario_id}: expected no placeholder evidence, found ${placeholderEvidence.map((item) => item.id).join(", ")}.`);
+    }
   }
 
   const claimTypes = new Set(claims.claims.map((claim) => claim.type));
@@ -194,6 +218,7 @@ export async function checkBenchmarkExpectation(runDir: string, expectation: Ben
     questionSpec.context,
     ...claims.claims.map((claim) => claim.text),
     ...evidence.evidence.map((item) => `${item.citation} ${item.summary}`),
+    ...sourceInventory.sources.map((source) => `${source.title} ${source.citation} ${source.summary}`),
     memo,
     redTeam
   ].join("\n").toLowerCase();
@@ -219,7 +244,9 @@ export async function checkBenchmarkExpectation(runDir: string, expectation: Ben
     artifact_counts: {
       claims: claims.claims.length,
       evidence: evidence.evidence.length,
-      contradictions: contradictions.contradictions.length
+      contradictions: contradictions.contradictions.length,
+      sources: sourceInventory.sources.length,
+      source_backed_evidence: sourceBackedEvidence
     }
   };
 }

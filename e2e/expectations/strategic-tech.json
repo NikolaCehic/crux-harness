@@ -7,11 +7,14 @@
   "required_terms": ["enterprise agent platform", "startup", "design partners"],
   "required_memo_sections": ["## Recommendation", "## Evidence Quality", "## Uncertainty", "## Next Tests"],
   "required_red_team_sections": ["## Opposing Thesis", "## Strongest Counterarguments", "## Failure Modes", "## Recommendation Impact"],
+  "requires_source_pack": true,
+  "forbid_placeholder_evidence": true,
+  "min_source_backed_evidence": 5,
   "min_scores": {
     "schema_validity": 1,
     "claim_coverage": 0.75,
     "evidence_traceability": 0.75,
+    "source_quality": 0.8,
     "decision_usefulness": 0.75
   }
 }
-

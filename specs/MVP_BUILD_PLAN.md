@@ -73,6 +73,23 @@ Purpose:
 
 Turn the harness from a shell into a useful analysis system.
 
+## Milestone 2.5: Source-Grounded Evidence Mode
+
+Status: implemented for the strategic technology benchmark.
+
+Deliverables:
+
+- `source_pack` support in input YAML
+- local source inventory generation
+- `source_inventory.json` schema
+- source-backed evidence items
+- provenance integrity checks
+- benchmark gates against placeholder evidence
+
+Purpose:
+
+Make Crux unable to fake evidence before adding LLM-powered evidence mapping.
+
 ## Milestone 4: Web Research Mode
 
 Deliverables:
@@ -134,4 +151,3 @@ Output:
 No stage may directly jump to the final answer.
 
 Every conclusion must pass through structured artifacts first.
-

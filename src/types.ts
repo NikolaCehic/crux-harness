@@ -1,6 +1,9 @@
 export type RunInput = {
   scenario_id?: string;
   analysis_scope?: string;
+  source_pack?: string | {
+    path: string;
+  };
   question: string;
   decision_context: string;
   time_horizon: string;
@@ -31,6 +34,30 @@ export type QuestionSpec = {
   required_artifacts: string[];
 };
 
+export type SourceInventory = {
+  source_pack: {
+    path: string | null;
+    mode: "none" | "directory";
+  };
+  sources: SourceItem[];
+};
+
+export type SourceItem = {
+  id: string;
+  path: string;
+  title: string;
+  source_type: "web" | "paper" | "dataset" | "internal_document" | "expert_input";
+  citation: string;
+  url: string;
+  published: string;
+  summary: string;
+  reliability: number;
+  recency: number;
+  relevance: number;
+  tags: string[];
+  content_hash: string;
+};
+
 export type Claim = {
   id: string;
   text: string;
@@ -59,6 +86,8 @@ export type EvidenceItem = {
   source_type: "web" | "paper" | "dataset" | "internal_document" | "calculation" | "expert_input" | "model_output";
   citation: string;
   summary: string;
+  source_ids?: string[];
+  excerpt?: string;
   supports_claim_ids: string[];
   challenges_claim_ids: string[];
   reliability: number;

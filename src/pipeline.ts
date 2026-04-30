@@ -12,8 +12,9 @@ import {
 import { evaluateRun } from "./evaluator.js";
 import { artifactPath, copyIntoRun, ensureDir, updateLatestSymlink, writeJson, writeText } from "./fs.js";
 import { loadInput, slugFromInput } from "./input.js";
+import { buildSourceInventory } from "./sources.js";
 import { trace } from "./trace.js";
-import type { RunContext } from "./types.js";
+import type { RunContext, SourceInventory } from "./types.js";
 import { ArtifactValidator, schemaIds } from "./validator.js";
 
 export type RunResult = {
@@ -48,14 +49,27 @@ export async function runHarness(projectRoot: string, inputPath: string): Promis
       await writeJson(artifactPath(runDir, "question_spec.json"), artifact);
     });
 
-    await runStage(context, "build_claim_graph", ["question_spec.json"], ["claims.json"], async () => {
+    let sourceInventory: SourceInventory = {
+      source_pack: {
+        path: null,
+        mode: "none"
+      },
+      sources: []
+    };
+    await runStage(context, "ingest_sources", ["input.yaml"], ["source_inventory.json"], async () => {
+      sourceInventory = await buildSourceInventory(projectRoot, input);
+      await validateOrThrow(validator, schemaIds.sourceInventory, sourceInventory);
+      await writeJson(artifactPath(runDir, "source_inventory.json"), sourceInventory);
+    });
+
+    await runStage(context, "build_claim_graph", ["question_spec.json", "source_inventory.json"], ["claims.json"], async () => {
       const artifact = buildClaims(input);
       await validateOrThrow(validator, schemaIds.claims, artifact);
       await writeJson(artifactPath(runDir, "claims.json"), artifact);
     });
 
-    await runStage(context, "gather_evidence", ["claims.json"], ["evidence.json"], async () => {
-      const artifact = buildEvidence(input);
+    await runStage(context, "gather_evidence", ["claims.json", "source_inventory.json"], ["evidence.json"], async () => {
+      const artifact = buildEvidence(input, sourceInventory);
       await validateOrThrow(validator, schemaIds.evidence, artifact);
       await writeJson(artifactPath(runDir, "evidence.json"), artifact);
     });
@@ -80,7 +94,7 @@ export async function runHarness(projectRoot: string, inputPath: string): Promis
       await writeText(artifactPath(runDir, "decision_memo.md"), buildDecisionMemo(input));
     });
 
-    await runStage(context, "evaluate", ["question_spec.json", "claims.json", "evidence.json", "contradictions.json", "red_team.md", "uncertainty.json", "decision_memo.md"], ["eval_report.json"], async () => {
+    await runStage(context, "evaluate", ["question_spec.json", "source_inventory.json", "claims.json", "evidence.json", "contradictions.json", "red_team.md", "uncertainty.json", "decision_memo.md"], ["eval_report.json"], async () => {
       const artifact = await evaluateRun(projectRoot, runDir);
       await validateOrThrow(validator, schemaIds.evalReport, artifact);
       await writeJson(artifactPath(runDir, "eval_report.json"), artifact);

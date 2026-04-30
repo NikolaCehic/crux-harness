@@ -29,6 +29,11 @@
           },
           "citation": { "type": "string", "minLength": 1 },
           "summary": { "type": "string", "minLength": 1 },
+          "source_ids": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^S[0-9]+$" }
+          },
+          "excerpt": { "type": "string" },
           "supports_claim_ids": {
             "type": "array",
             "items": { "type": "string", "pattern": "^C[0-9]+$" }
@@ -48,4 +53,3 @@
   },
   "additionalProperties": false
 }
-

@@ -26,6 +26,7 @@ Given a strategic thesis or hard decision question, Crux should produce a comple
 runs/<run_id>/
   input.yaml
   question_spec.json
+  source_inventory.json
   claims.json
   evidence.json
   contradictions.json
@@ -115,3 +116,5 @@ Crux v0.1 is a deterministic harness. It generates complete placeholder artifact
 The placeholder evidence is deliberately marked as limited. This version proves the harness shape before live research, model calls, and stronger evaluators are added.
 
 The deterministic generator is scope-aware for benchmark coverage. It currently supports strategic technology, investment diligence, policy analysis, product strategy, scientific thesis evaluation, market entry, and root-cause analysis scenarios.
+
+Crux v0.2 adds source-grounded evidence mode for source-pack scenarios. The strategic technology benchmark now ingests `sources/strategic-tech`, writes `source_inventory.json`, and requires source-backed evidence instead of placeholder evidence.

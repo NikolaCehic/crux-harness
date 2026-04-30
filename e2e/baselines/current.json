@@ -109,7 +109,7 @@
         "schema_validity": 1,
         "claim_coverage": 1,
         "evidence_traceability": 1,
-        "source_quality": 0.63,
+        "source_quality": 0.85,
         "contradiction_handling": 1,
         "red_team_strength": 1,
         "uncertainty_quality": 1,
@@ -118,9 +118,10 @@
       "artifact_counts": {
         "claims": 12,
         "evidence": 8,
-        "contradictions": 3
+        "contradictions": 3,
+        "sources": 5,
+        "source_backed_evidence": 7
       }
     }
   }
 }
-

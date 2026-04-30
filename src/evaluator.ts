@@ -6,12 +6,14 @@ import type {
   EvalReport,
   EvidenceArtifact,
   QuestionSpec,
+  SourceInventory,
   UncertaintyArtifact
 } from "./types.js";
 import { ArtifactValidator, schemaIds } from "./validator.js";
 
 type LoadedRun = {
   questionSpec?: QuestionSpec;
+  sourceInventory?: SourceInventory;
   claims?: ClaimsArtifact;
   evidence?: EvidenceArtifact;
   contradictions?: ContradictionsArtifact;
@@ -68,8 +70,9 @@ export async function evaluateRun(projectRoot: string, runDir: string): Promise<
 async function loadRun(runDir: string): Promise<LoadedRun> {
   const failedChecks: string[] = [];
 
-  const [questionSpec, claims, evidence, contradictions, uncertainty, redTeam, decisionMemo] = await Promise.all([
+  const [questionSpec, sourceInventory, claims, evidence, contradictions, uncertainty, redTeam, decisionMemo] = await Promise.all([
     readJson<QuestionSpec>(runDir, "question_spec.json", failedChecks),
+    readJson<SourceInventory>(runDir, "source_inventory.json", failedChecks),
     readJson<ClaimsArtifact>(runDir, "claims.json", failedChecks),
     readJson<EvidenceArtifact>(runDir, "evidence.json", failedChecks),
     readJson<ContradictionsArtifact>(runDir, "contradictions.json", failedChecks),
@@ -78,7 +81,7 @@ async function loadRun(runDir: string): Promise<LoadedRun> {
     readText(runDir, "decision_memo.md", failedChecks)
   ]);
 
-  return { questionSpec, claims, evidence, contradictions, uncertainty, redTeam, decisionMemo, failedChecks };
+  return { questionSpec, sourceInventory, claims, evidence, contradictions, uncertainty, redTeam, decisionMemo, failedChecks };
 }
 
 async function readJson<T>(runDir: string, file: string, failedChecks: string[]): Promise<T | undefined> {
@@ -102,6 +105,7 @@ async function readText(runDir: string, file: string, failedChecks: string[]): P
 async function validateLoadedRun(validator: ArtifactValidator, loaded: LoadedRun): Promise<string[]> {
   const checks: Array<[string, string, unknown]> = [
     ["question_spec.json", schemaIds.questionSpec, loaded.questionSpec],
+    ["source_inventory.json", schemaIds.sourceInventory, loaded.sourceInventory],
     ["claims.json", schemaIds.claims, loaded.claims],
     ["evidence.json", schemaIds.evidence, loaded.evidence],
     ["contradictions.json", schemaIds.contradictions, loaded.contradictions],
@@ -207,6 +211,10 @@ function buildFindings(loaded: LoadedRun, failedChecks: string[]): string[] {
     findings.push(`Evidence map contains ${loaded.evidence.evidence.length} evidence items.`);
   }
 
+  if (loaded.sourceInventory?.sources.length) {
+    findings.push(`Source inventory contains ${loaded.sourceInventory.sources.length} source-backed inputs.`);
+  }
+
   if (loaded.contradictions?.unsupported_critical_claims.length) {
     findings.push("Unsupported critical claims are explicitly surfaced instead of hidden in the memo.");
   }
@@ -238,4 +246,3 @@ function buildRecommendations(loaded: LoadedRun, failedChecks: string[]): string
 function round(value: number): number {
   return Math.round(value * 100) / 100;
 }
-

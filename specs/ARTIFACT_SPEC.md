@@ -19,6 +19,7 @@ Required files:
 ```text
 input.yaml
 question_spec.json
+source_inventory.json
 claims.json
 evidence.json
 contradictions.json
@@ -46,6 +47,7 @@ Optional fields:
 - `risk_tolerance`
 - `known_constraints`
 - `source_policy`
+- `source_pack`
 - `tool_budget`
 - `model_budget`
 - `user_prior`
@@ -65,6 +67,31 @@ Required fields:
 - `constraints`
 - `unknowns`
 - `required_artifacts`
+
+## source_inventory.json
+
+Local source-pack inventory.
+
+Required fields:
+
+- `source_pack`
+- `sources`
+
+Each source includes:
+
+- `id`
+- `path`
+- `title`
+- `source_type`
+- `citation`
+- `url`
+- `published`
+- `summary`
+- `reliability`
+- `recency`
+- `relevance`
+- `tags`
+- `content_hash`
 
 ## claims.json
 
@@ -126,6 +153,13 @@ Each evidence item includes:
 - `recency`
 - `relevance`
 - `limitations`
+
+Optional source-grounding fields:
+
+- `source_ids`
+- `excerpt`
+
+In source-grounded mode, every non-calculation evidence item must include at least one `source_id`.
 
 Allowed source types:
 
@@ -240,4 +274,3 @@ Each line is one JSON object with:
 - `input_artifacts`
 - `output_artifacts`
 - `metadata`
-

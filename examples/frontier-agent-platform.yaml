@@ -9,10 +9,10 @@ known_constraints:
   - "Must reach credible customer traction within 12 months."
   - "Product should benefit from technical depth rather than pure distribution."
 source_policy: "offline"
+source_pack: "sources/strategic-tech"
 tool_budget:
   max_research_items: 12
   max_agent_steps: 20
 model_budget:
   max_llm_calls: 12
 user_prior: "Enterprise agent platforms are attractive but may be crowded and distribution-heavy."
-
