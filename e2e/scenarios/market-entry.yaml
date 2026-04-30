@@ -1,0 +1,14 @@
+scenario_id: "market-entry"
+analysis_scope: "market-entry"
+question: "Should a European fintech enter the US SMB lending market?"
+decision_context: "A fintech leadership team is evaluating a major geographic expansion."
+time_horizon: "24 months"
+output_goal: "market entry memo"
+geography: "United States"
+risk_tolerance: "medium-high"
+known_constraints:
+  - "The company has strong underwriting technology but limited US regulatory experience."
+  - "Capital partnerships would be required."
+source_policy: "offline"
+user_prior: "The market is large, but regulation, credit risk, and distribution may dominate."
+

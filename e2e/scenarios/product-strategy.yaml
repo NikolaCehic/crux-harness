@@ -1,0 +1,14 @@
+scenario_id: "product-strategy"
+analysis_scope: "product-strategy"
+question: "Should a B2B SaaS company add an AI copilot or improve its existing workflow automation?"
+decision_context: "A mid-market SaaS company is prioritizing its next two quarters of product development."
+time_horizon: "6 months"
+output_goal: "product strategy memo"
+geography: "Global English-speaking customer base"
+risk_tolerance: "medium"
+known_constraints:
+  - "Engineering capacity is fixed."
+  - "Retention and expansion matter more than press attention."
+source_policy: "offline"
+user_prior: "AI copilots may help positioning, but workflow automation may create more durable value."
+

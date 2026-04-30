@@ -1,0 +1,14 @@
+scenario_id: "policy-analysis"
+analysis_scope: "policy-analysis"
+question: "Should a city subsidize office-to-residential conversions to reduce housing costs?"
+decision_context: "A city policy team is choosing whether to allocate public funds to conversion subsidies."
+time_horizon: "3 years"
+output_goal: "policy decision memo"
+geography: "Large US city"
+risk_tolerance: "medium"
+known_constraints:
+  - "Budget is limited and competing housing interventions exist."
+  - "Political feasibility and implementation speed matter."
+source_policy: "offline"
+user_prior: "Conversions sound promising, but economics and zoning may limit housing impact."
+

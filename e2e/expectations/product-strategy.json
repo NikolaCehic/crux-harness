@@ -1,0 +1,17 @@
+{
+  "scenario_id": "product-strategy",
+  "min_claims": 10,
+  "min_evidence": 6,
+  "min_contradictions": 2,
+  "required_claim_types": ["descriptive", "causal", "predictive", "decision"],
+  "required_terms": ["AI copilot", "workflow automation", "B2B SaaS"],
+  "required_memo_sections": ["## Recommendation", "## Evidence Quality", "## Uncertainty", "## Next Tests"],
+  "required_red_team_sections": ["## Opposing Thesis", "## Strongest Counterarguments", "## Failure Modes", "## Recommendation Impact"],
+  "min_scores": {
+    "schema_validity": 1,
+    "claim_coverage": 0.75,
+    "evidence_traceability": 0.75,
+    "decision_usefulness": 0.75
+  }
+}
+

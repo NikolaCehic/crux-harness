@@ -1,4 +1,6 @@
 export type RunInput = {
+  scenario_id?: string;
+  analysis_scope?: string;
   question: string;
   decision_context: string;
   time_horizon: string;
@@ -136,4 +138,3 @@ export type RunContext = {
   inputPath: string;
   input: RunInput;
 };
-

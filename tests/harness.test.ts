@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
+import { validateRunIntegrity } from "../src/integrity.js";
 import { replayRun, rerunEvaluation, runHarness } from "../src/pipeline.js";
 
 const projectRoot = process.cwd();
@@ -39,6 +40,10 @@ test("runHarness creates a complete, schema-valid deterministic run", async () =
 
   const traceLines = readFileSync(path.join(result.runDir, "trace.jsonl"), "utf8").trim().split("\n");
   assert.equal(traceLines.length, 16);
+
+  const integrity = await validateRunIntegrity(projectRoot, result.runDir);
+  assert.deepEqual(integrity.failures, []);
+  assert.equal(integrity.valid, true);
 });
 
 test("rerunEvaluation rewrites eval_report.json for an existing run", async () => {
@@ -57,4 +62,3 @@ test("replayRun creates a new run from a prior run input", async () => {
   assert.notEqual(replay.runDir, original.runDir);
   assert.equal(existsSync(path.join(replay.runDir, "decision_memo.md")), true);
 });
-

@@ -82,8 +82,18 @@ Run tests:
 npm test
 ```
 
+Run the scoped E2E benchmark suite:
+
+```bash
+npm run benchmark
+```
+
+The benchmark executes all scenarios in `e2e/scenarios`, checks the matching invariants in `e2e/expectations`, validates cross-artifact integrity, and fails loudly if a run breaks the reasoning contract.
+
 ## Current Implementation
 
 Crux v0.1 is a deterministic harness. It generates complete placeholder artifacts that satisfy the run contract, then evaluates them.
 
 The placeholder evidence is deliberately marked as limited. This version proves the harness shape before live research, model calls, and stronger evaluators are added.
+
+The deterministic generator is scope-aware for benchmark coverage. It currently supports strategic technology, investment diligence, policy analysis, product strategy, scientific thesis evaluation, market entry, and root-cause analysis scenarios.

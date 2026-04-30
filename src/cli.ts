@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import path from "node:path";
 import { Command } from "commander";
+import { runBenchmark } from "./benchmark.js";
 import { replayRun, rerunEvaluation, runHarness } from "./pipeline.js";
 
 const program = new Command();
@@ -17,6 +18,26 @@ program
   .action(async (input: string) => {
     const result = await runHarness(process.cwd(), input);
     console.log(`Run complete: ${path.relative(process.cwd(), result.runDir)}`);
+  });
+
+program
+  .command("benchmark")
+  .description("Run the scoped E2E benchmark scenarios")
+  .option("--scenarios <dir>", "Scenario directory", "e2e/scenarios")
+  .option("--expectations <dir>", "Expectation directory", "e2e/expectations")
+  .action(async (options: { scenarios: string; expectations: string }) => {
+    const report = await runBenchmark(process.cwd(), options.scenarios, options.expectations);
+    for (const result of report.results) {
+      const status = result.passed ? "PASS" : "FAIL";
+      console.log(`${status} ${result.scenario}: ${result.runDir}`);
+      for (const failure of result.failures) {
+        console.log(`  - ${failure}`);
+      }
+    }
+    console.log(`Benchmark ${report.passed ? "passed" : "failed"}: ${report.results.filter((result) => result.passed).length}/${report.scenario_count} scenarios`);
+    if (!report.passed) {
+      process.exitCode = 1;
+    }
   });
 
 program
@@ -41,4 +62,3 @@ program.parseAsync().catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;
 });
-

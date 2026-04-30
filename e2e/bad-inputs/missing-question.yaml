@@ -1,0 +1,6 @@
+scenario_id: "missing-question"
+analysis_scope: "strategic-tech"
+decision_context: "This file is intentionally invalid for failure-path testing."
+time_horizon: "12 months"
+output_goal: "decision memo"
+

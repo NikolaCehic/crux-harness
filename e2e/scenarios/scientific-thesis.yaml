@@ -1,0 +1,14 @@
+scenario_id: "scientific-thesis"
+analysis_scope: "scientific-thesis"
+question: "Is retrieval-augmented generation still necessary as context windows grow?"
+decision_context: "An applied AI research team is deciding whether to keep investing in RAG infrastructure."
+time_horizon: "12 months"
+output_goal: "technical thesis evaluation"
+geography: "Global"
+risk_tolerance: "medium"
+known_constraints:
+  - "The team serves enterprise users who require freshness, citations, and access control."
+  - "Long-context models are improving quickly."
+source_policy: "offline"
+user_prior: "Long context reduces some retrieval needs, but may not remove the need for grounded retrieval systems."
+

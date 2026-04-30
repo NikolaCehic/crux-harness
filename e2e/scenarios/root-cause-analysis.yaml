@@ -1,0 +1,14 @@
+scenario_id: "root-cause-analysis"
+analysis_scope: "root-cause-analysis"
+question: "Why did activation drop after a product onboarding redesign?"
+decision_context: "A growth and product team needs to diagnose a recent activation decline before rolling back or iterating."
+time_horizon: "30 days"
+output_goal: "root-cause analysis memo"
+geography: "All active product markets"
+risk_tolerance: "low"
+known_constraints:
+  - "A redesign shipped two weeks before the activation decline."
+  - "The team has event analytics, session recordings, and support tickets available."
+source_policy: "offline"
+user_prior: "The redesign is suspicious, but instrumentation or traffic-mix changes could also explain the drop."
+

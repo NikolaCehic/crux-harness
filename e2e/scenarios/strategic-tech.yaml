@@ -1,0 +1,14 @@
+scenario_id: "strategic-tech"
+analysis_scope: "strategic-tech"
+question: "Should a frontier AI startup build an enterprise agent platform in 2026?"
+decision_context: "A seed-stage technical team is choosing its primary product strategy for the next 12 months."
+time_horizon: "12 months"
+output_goal: "decision memo"
+geography: "US and EU"
+risk_tolerance: "medium"
+known_constraints:
+  - "Small team with strong engineering ability but limited enterprise sales capacity."
+  - "Must reach credible customer traction within 12 months."
+source_policy: "offline"
+user_prior: "Enterprise agent platforms are attractive but may be crowded and distribution-heavy."
+

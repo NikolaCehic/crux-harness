@@ -1,0 +1,14 @@
+scenario_id: "investment-diligence"
+analysis_scope: "investment-diligence"
+question: "Should a fund invest in a startup claiming to automate enterprise compliance workflows?"
+decision_context: "A venture fund is evaluating whether to proceed from first meeting to deep diligence and partner discussion."
+time_horizon: "18 months"
+output_goal: "investment diligence memo"
+geography: "US and EU"
+risk_tolerance: "medium-high"
+known_constraints:
+  - "The startup has early pilots but limited audited revenue."
+  - "The fund needs evidence of durable differentiation and buyer urgency."
+source_policy: "offline"
+user_prior: "Compliance automation is valuable, but claims about AI automation may be overstated."
+

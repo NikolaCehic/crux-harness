@@ -1,4 +1,4 @@
-import { mkdir, rm } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import {
   buildClaims,
@@ -49,29 +49,29 @@ export async function runHarness(projectRoot: string, inputPath: string): Promis
     });
 
     await runStage(context, "build_claim_graph", ["question_spec.json"], ["claims.json"], async () => {
-      const artifact = buildClaims();
+      const artifact = buildClaims(input);
       await validateOrThrow(validator, schemaIds.claims, artifact);
       await writeJson(artifactPath(runDir, "claims.json"), artifact);
     });
 
     await runStage(context, "gather_evidence", ["claims.json"], ["evidence.json"], async () => {
-      const artifact = buildEvidence();
+      const artifact = buildEvidence(input);
       await validateOrThrow(validator, schemaIds.evidence, artifact);
       await writeJson(artifactPath(runDir, "evidence.json"), artifact);
     });
 
     await runStage(context, "verify_claims", ["claims.json", "evidence.json"], ["contradictions.json"], async () => {
-      const artifact = buildContradictions();
+      const artifact = buildContradictions(input);
       await validateOrThrow(validator, schemaIds.contradictions, artifact);
       await writeJson(artifactPath(runDir, "contradictions.json"), artifact);
     });
 
     await runStage(context, "red_team", ["question_spec.json", "claims.json", "evidence.json", "contradictions.json"], ["red_team.md"], async () => {
-      await writeText(artifactPath(runDir, "red_team.md"), buildRedTeam());
+      await writeText(artifactPath(runDir, "red_team.md"), buildRedTeam(input));
     });
 
     await runStage(context, "model_uncertainty", ["claims.json", "evidence.json", "contradictions.json", "red_team.md"], ["uncertainty.json"], async () => {
-      const artifact = buildUncertainty();
+      const artifact = buildUncertainty(input);
       await validateOrThrow(validator, schemaIds.uncertainty, artifact);
       await writeJson(artifactPath(runDir, "uncertainty.json"), artifact);
     });
@@ -158,7 +158,6 @@ async function createRunId(runsDir: string, slug: string): Promise<string> {
   while (true) {
     try {
       await mkdir(path.join(runsDir, runId));
-      await rm(path.join(runsDir, runId), { recursive: true, force: true });
       return runId;
     } catch {
       attempt += 1;

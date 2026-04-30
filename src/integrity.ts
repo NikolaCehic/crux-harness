@@ -1,0 +1,265 @@
+import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import type {
+  ClaimsArtifact,
+  ContradictionsArtifact,
+  EvalReport,
+  EvidenceArtifact,
+  QuestionSpec,
+  TraceEvent,
+  UncertaintyArtifact
+} from "./types.js";
+import { ArtifactValidator, schemaIds } from "./validator.js";
+
+export type IntegrityReport = {
+  valid: boolean;
+  failures: string[];
+};
+
+const requiredFiles = [
+  "input.yaml",
+  "question_spec.json",
+  "claims.json",
+  "evidence.json",
+  "contradictions.json",
+  "red_team.md",
+  "uncertainty.json",
+  "decision_memo.md",
+  "eval_report.json",
+  "trace.jsonl"
+] as const;
+
+const expectedStages = [
+  "normalize_question",
+  "build_claim_graph",
+  "gather_evidence",
+  "verify_claims",
+  "red_team",
+  "model_uncertainty",
+  "write_decision_memo",
+  "evaluate"
+] as const;
+
+export async function validateRunIntegrity(projectRoot: string, runDir: string): Promise<IntegrityReport> {
+  const absoluteRunDir = path.resolve(projectRoot, runDir);
+  const failures: string[] = [];
+
+  for (const file of requiredFiles) {
+    if (!existsSync(path.join(absoluteRunDir, file))) {
+      failures.push(`Missing required artifact: ${file}`);
+    }
+  }
+
+  const validator = new ArtifactValidator(path.join(projectRoot, "schemas"));
+  const questionSpec = await readJson<QuestionSpec>(absoluteRunDir, "question_spec.json", failures);
+  const claims = await readJson<ClaimsArtifact>(absoluteRunDir, "claims.json", failures);
+  const evidence = await readJson<EvidenceArtifact>(absoluteRunDir, "evidence.json", failures);
+  const contradictions = await readJson<ContradictionsArtifact>(absoluteRunDir, "contradictions.json", failures);
+  const uncertainty = await readJson<UncertaintyArtifact>(absoluteRunDir, "uncertainty.json", failures);
+  const evalReport = await readJson<EvalReport>(absoluteRunDir, "eval_report.json", failures);
+  const redTeam = await readText(absoluteRunDir, "red_team.md", failures);
+  const decisionMemo = await readText(absoluteRunDir, "decision_memo.md", failures);
+  const traceLines = await readTrace(absoluteRunDir, failures);
+
+  await validateSchema(validator, schemaIds.questionSpec, "question_spec.json", questionSpec, failures);
+  await validateSchema(validator, schemaIds.claims, "claims.json", claims, failures);
+  await validateSchema(validator, schemaIds.evidence, "evidence.json", evidence, failures);
+  await validateSchema(validator, schemaIds.contradictions, "contradictions.json", contradictions, failures);
+  await validateSchema(validator, schemaIds.uncertainty, "uncertainty.json", uncertainty, failures);
+  await validateSchema(validator, schemaIds.evalReport, "eval_report.json", evalReport, failures);
+
+  if (claims && evidence && contradictions) {
+    validateClaimEvidenceGraph(claims, evidence, contradictions, failures);
+  }
+
+  if (uncertainty) {
+    validateUncertainty(uncertainty, failures);
+  }
+
+  validateMarkdownSections("red_team.md", redTeam, [
+    "## Opposing Thesis",
+    "## Strongest Counterarguments",
+    "## Failure Modes",
+    "## Missing Evidence",
+    "## Recommendation Impact"
+  ], failures);
+
+  validateMarkdownSections("decision_memo.md", decisionMemo, [
+    "## Recommendation",
+    "## Executive Summary",
+    "## Core Reasoning",
+    "## Key Claims",
+    "## Evidence Quality",
+    "## Red-Team Findings",
+    "## Uncertainty",
+    "## What Would Change This Decision",
+    "## Next Tests"
+  ], failures);
+
+  validateTrace(traceLines, failures);
+
+  if (evalReport) {
+    if (evalReport.scores.schema_validity !== 1) {
+      failures.push("eval_report.json schema_validity score must be 1.");
+    }
+    if (evalReport.failed_checks.length > 0) {
+      failures.push(`eval_report.json has failed checks: ${evalReport.failed_checks.join("; ")}`);
+    }
+  }
+
+  if (questionSpec && decisionMemo && !decisionMemo.toLowerCase().includes(questionSpec.time_horizon.toLowerCase())) {
+    failures.push("decision_memo.md should mention the normalized time horizon.");
+  }
+
+  return { valid: failures.length === 0, failures };
+}
+
+async function validateSchema(
+  validator: ArtifactValidator,
+  schemaId: string,
+  file: string,
+  value: unknown,
+  failures: string[]
+): Promise<void> {
+  if (value === undefined) {
+    return;
+  }
+
+  const result = await validator.validate(schemaId, value);
+  if (!result.valid) {
+    failures.push(`${file} failed schema validation: ${result.errors.join("; ")}`);
+  }
+}
+
+function validateClaimEvidenceGraph(
+  claimsArtifact: ClaimsArtifact,
+  evidenceArtifact: EvidenceArtifact,
+  contradictionsArtifact: ContradictionsArtifact,
+  failures: string[]
+): void {
+  const claimIds = new Set(claimsArtifact.claims.map((claim) => claim.id));
+  const evidenceIds = new Set(evidenceArtifact.evidence.map((item) => item.id));
+
+  if (claimIds.size !== claimsArtifact.claims.length) {
+    failures.push("claims.json contains duplicate claim IDs.");
+  }
+
+  if (evidenceIds.size !== evidenceArtifact.evidence.length) {
+    failures.push("evidence.json contains duplicate evidence IDs.");
+  }
+
+  for (const rootId of claimsArtifact.root_claim_ids) {
+    assertKnown(rootId, claimIds, `Unknown root_claim_id: ${rootId}`, failures);
+  }
+
+  for (const claim of claimsArtifact.claims) {
+    for (const dependency of claim.depends_on) {
+      assertKnown(dependency, claimIds, `Claim ${claim.id} depends on unknown claim ${dependency}.`, failures);
+    }
+    for (const evidenceId of [...claim.evidence_ids, ...claim.counterevidence_ids]) {
+      assertKnown(evidenceId, evidenceIds, `Claim ${claim.id} references unknown evidence ${evidenceId}.`, failures);
+    }
+  }
+
+  for (const edge of claimsArtifact.edges) {
+    assertKnown(edge.from, claimIds, `Edge references unknown from claim ${edge.from}.`, failures);
+    assertKnown(edge.to, claimIds, `Edge references unknown to claim ${edge.to}.`, failures);
+  }
+
+  for (const item of evidenceArtifact.evidence) {
+    for (const claimId of [...item.supports_claim_ids, ...item.challenges_claim_ids]) {
+      assertKnown(claimId, claimIds, `Evidence ${item.id} references unknown claim ${claimId}.`, failures);
+    }
+  }
+
+  for (const contradiction of contradictionsArtifact.contradictions) {
+    for (const claimId of contradiction.claim_ids) {
+      assertKnown(claimId, claimIds, `Contradiction ${contradiction.id} references unknown claim ${claimId}.`, failures);
+    }
+  }
+
+  for (const claimId of contradictionsArtifact.unsupported_critical_claims) {
+    assertKnown(claimId, claimIds, `Unsupported critical claim references unknown claim ${claimId}.`, failures);
+  }
+}
+
+function validateUncertainty(uncertainty: UncertaintyArtifact, failures: string[]): void {
+  if (uncertainty.key_uncertainties.length < 3) {
+    failures.push("uncertainty.json should contain at least 3 key uncertainties.");
+  }
+  if (uncertainty.what_would_change_my_mind.length === 0) {
+    failures.push("uncertainty.json must include what_would_change_my_mind entries.");
+  }
+  if (uncertainty.recommended_tests.length === 0) {
+    failures.push("uncertainty.json must include recommended_tests entries.");
+  }
+}
+
+function validateMarkdownSections(file: string, markdown: string | undefined, sections: string[], failures: string[]): void {
+  if (!markdown) {
+    return;
+  }
+
+  for (const section of sections) {
+    if (!markdown.includes(section)) {
+      failures.push(`${file} missing section: ${section}`);
+    }
+  }
+}
+
+function validateTrace(traceLines: TraceEvent[], failures: string[]): void {
+  if (traceLines.length === 0) {
+    failures.push("trace.jsonl is empty.");
+    return;
+  }
+
+  for (const stage of expectedStages) {
+    const hasStart = traceLines.some((event) => event.stage === stage && event.event_type === "start");
+    const hasComplete = traceLines.some((event) => event.stage === stage && event.event_type === "complete");
+    if (!hasStart) {
+      failures.push(`trace.jsonl missing start event for ${stage}.`);
+    }
+    if (!hasComplete) {
+      failures.push(`trace.jsonl missing complete event for ${stage}.`);
+    }
+  }
+}
+
+async function readJson<T>(runDir: string, file: string, failures: string[]): Promise<T | undefined> {
+  try {
+    return JSON.parse(await readFile(path.join(runDir, file), "utf8")) as T;
+  } catch (error) {
+    failures.push(`Could not read valid ${file}: ${error instanceof Error ? error.message : String(error)}`);
+    return undefined;
+  }
+}
+
+async function readText(runDir: string, file: string, failures: string[]): Promise<string | undefined> {
+  try {
+    return readFile(path.join(runDir, file), "utf8");
+  } catch (error) {
+    failures.push(`Could not read ${file}: ${error instanceof Error ? error.message : String(error)}`);
+    return undefined;
+  }
+}
+
+async function readTrace(runDir: string, failures: string[]): Promise<TraceEvent[]> {
+  try {
+    const raw = await readFile(path.join(runDir, "trace.jsonl"), "utf8");
+    return raw
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as TraceEvent);
+  } catch (error) {
+    failures.push(`Could not read valid trace.jsonl: ${error instanceof Error ? error.message : String(error)}`);
+    return [];
+  }
+}
+
+function assertKnown(id: string, knownIds: Set<string>, message: string, failures: string[]): void {
+  if (!knownIds.has(id)) {
+    failures.push(message);
+  }
+}
+

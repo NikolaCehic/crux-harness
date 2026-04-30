@@ -1,0 +1,7 @@
+question: "This file is intentionally malformed."
+decision_context: "Failure-path testing."
+time_horizon: "12 months"
+output_goal: "decision memo"
+known_constraints:
+  - "Missing closing quote
+
