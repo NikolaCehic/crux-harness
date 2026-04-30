@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { promisify } from "node:util";
 import test from "node:test";
 import { runBenchmark } from "../src/benchmark.js";
@@ -11,12 +13,26 @@ const cliPath = "dist/src/cli.js";
 test("benchmark runner passes all scoped scenarios", async () => {
   const report = await runBenchmark(projectRoot);
 
-  assert.equal(report.scenario_count, 7);
+  assert.equal(report.schema_version, "crux.benchmark.report.v1");
+  assert.equal(report.summary.scenario_count, 7);
+  assert.equal(report.summary.regression_count, 0);
   assert.equal(report.passed, true);
   assert.deepEqual(
     report.results.map((result) => [result.scenario, result.passed, result.failures]),
     report.results.map((result) => [result.scenario, true, []])
   );
+});
+
+test("benchmark runner compares against the committed baseline", async () => {
+  const report = await runBenchmark(projectRoot, {
+    baselinePath: "e2e/baselines/current.json",
+    regressionThreshold: 0.02
+  });
+
+  assert.equal(report.passed, true);
+  assert.equal(report.baseline?.path, "e2e/baselines/current.json");
+  assert.equal(report.summary.regression_count, 0);
+  assert.equal(report.results.every((result) => result.regressions.length === 0), true);
 });
 
 test("compiled CLI runs the full benchmark suite as a black-box command", async () => {
@@ -29,7 +45,59 @@ test("compiled CLI runs the full benchmark suite as a black-box command", async 
   assert.match(stdout, /PASS market-entry/);
   assert.match(stdout, /PASS root-cause-analysis/);
   assert.match(stdout, /PASS strategic-tech/);
-  assert.match(stdout, /Benchmark passed: 7\/7 scenarios/);
+  assert.match(stdout, /Benchmark passed: 7\/7 scenarios, 0 regressions/);
+});
+
+test("compiled CLI writes a machine-readable benchmark report", async () => {
+  const reportPath = `test-results/benchmark-e2e-${process.pid}-${Date.now()}.json`;
+  const { stdout } = await execFileAsync(process.execPath, [cliPath, "benchmark", "--report", reportPath], { cwd: projectRoot });
+  assert.match(stdout, new RegExp(`Report written: ${reportPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
+
+  const report = JSON.parse(await readFile(path.join(projectRoot, reportPath), "utf8"));
+  assert.equal(report.schema_version, "crux.benchmark.report.v1");
+  assert.equal(report.summary.scenario_count, 7);
+  assert.equal(report.summary.regression_count, 0);
+  assert.equal(report.passed, true);
+  assert.equal(report.results.length, 7);
+  assert.equal(typeof report.results[0].scores.schema_validity, "number");
+});
+
+test("benchmark runner fails when a baseline score regresses past the threshold", async () => {
+  const baselinePath = `test-results/high-baseline-${process.pid}-${Date.now()}.json`;
+  await mkdir(path.dirname(path.join(projectRoot, baselinePath)), { recursive: true });
+  await writeFile(
+    path.join(projectRoot, baselinePath),
+    JSON.stringify({
+      schema_version: "crux.benchmark.baseline.v1",
+      scenarios: Object.fromEntries(
+        [
+          "investment-diligence",
+          "market-entry",
+          "policy-analysis",
+          "product-strategy",
+          "root-cause-analysis",
+          "scientific-thesis",
+          "strategic-tech"
+        ].map((scenario) => [
+          scenario,
+          {
+            scores: { source_quality: 0.9 },
+            artifact_counts: { claims: 12, evidence: 8, contradictions: 3 }
+          }
+        ])
+      )
+    }, null, 2),
+    "utf8"
+  );
+
+  const report = await runBenchmark(projectRoot, {
+    baselinePath,
+    regressionThreshold: 0
+  });
+
+  assert.equal(report.passed, false);
+  assert.equal(report.summary.regression_count, 7);
+  assert.equal(report.results.every((result) => result.regressions.some((regression) => regression.includes("source_quality regressed"))), true);
 });
 
 test("compiled CLI lifecycle supports run, eval, and replay", async () => {

@@ -2,7 +2,7 @@ node_modules/
 dist/
 coverage/
 .DS_Store
+test-results/
 
 runs/*
 !runs/.gitkeep
-

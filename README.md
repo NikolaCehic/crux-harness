@@ -88,7 +88,25 @@ Run the scoped E2E benchmark suite:
 npm run benchmark
 ```
 
-The benchmark executes all scenarios in `e2e/scenarios`, checks the matching invariants in `e2e/expectations`, validates cross-artifact integrity, and fails loudly if a run breaks the reasoning contract.
+The benchmark executes all scenarios in `e2e/scenarios`, checks the matching invariants in `e2e/expectations`, validates cross-artifact integrity, compares scores against `e2e/baselines/current.json`, and fails loudly if a run breaks the reasoning contract or regresses past the threshold.
+
+By default, `npm run benchmark` writes a machine-readable report to:
+
+```text
+test-results/benchmark-latest.json
+```
+
+You can also write an explicit report:
+
+```bash
+npm run crux -- benchmark --report test-results/benchmark.json
+```
+
+Use a custom regression threshold:
+
+```bash
+npm run crux -- benchmark --regression-threshold 0.05
+```
 
 ## Current Implementation
 

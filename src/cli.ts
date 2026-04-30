@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import path from "node:path";
 import { Command } from "commander";
-import { runBenchmark } from "./benchmark.js";
+import { runBenchmark, writeBenchmarkReport } from "./benchmark.js";
 import { replayRun, rerunEvaluation, runHarness } from "./pipeline.js";
 
 const program = new Command();
@@ -25,16 +25,36 @@ program
   .description("Run the scoped E2E benchmark scenarios")
   .option("--scenarios <dir>", "Scenario directory", "e2e/scenarios")
   .option("--expectations <dir>", "Expectation directory", "e2e/expectations")
-  .action(async (options: { scenarios: string; expectations: string }) => {
-    const report = await runBenchmark(process.cwd(), options.scenarios, options.expectations);
+  .option("--baseline <file>", "Baseline JSON file for regression comparison", "e2e/baselines/current.json")
+  .option("--regression-threshold <number>", "Allowed score drop versus baseline", "0.02")
+  .option("--report <file>", "Write machine-readable benchmark report JSON")
+  .action(async (options: { scenarios: string; expectations: string; baseline?: string; regressionThreshold: string; report?: string }) => {
+    const regressionThreshold = Number.parseFloat(options.regressionThreshold);
+    if (Number.isNaN(regressionThreshold) || regressionThreshold < 0) {
+      throw new Error("--regression-threshold must be a non-negative number");
+    }
+
+    const report = await runBenchmark(process.cwd(), {
+      scenariosDir: options.scenarios,
+      expectationsDir: options.expectations,
+      baselinePath: options.baseline,
+      regressionThreshold
+    });
+
     for (const result of report.results) {
       const status = result.passed ? "PASS" : "FAIL";
-      console.log(`${status} ${result.scenario}: ${result.runDir}`);
+      console.log(`${status} ${result.scenario}: ${result.runDir} (${result.duration_ms}ms)`);
       for (const failure of result.failures) {
         console.log(`  - ${failure}`);
       }
     }
-    console.log(`Benchmark ${report.passed ? "passed" : "failed"}: ${report.results.filter((result) => result.passed).length}/${report.scenario_count} scenarios`);
+
+    if (options.report) {
+      await writeBenchmarkReport(path.resolve(process.cwd(), options.report), report);
+      console.log(`Report written: ${options.report}`);
+    }
+
+    console.log(`Benchmark ${report.passed ? "passed" : "failed"}: ${report.summary.passed_count}/${report.summary.scenario_count} scenarios, ${report.summary.regression_count} regressions`);
     if (!report.passed) {
       process.exitCode = 1;
     }

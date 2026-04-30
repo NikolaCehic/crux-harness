@@ -1,4 +1,4 @@
-import { readdir, readFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ClaimsArtifact, EvalReport, EvidenceArtifact } from "./types.js";
 import { validateRunIntegrity } from "./integrity.js";
@@ -20,21 +20,65 @@ export type BenchmarkScenarioResult = {
   scenario: string;
   runDir: string;
   passed: boolean;
+  duration_ms: number;
+  scores: EvalReport["scores"];
+  artifact_counts: {
+    claims: number;
+    evidence: number;
+    contradictions: number;
+  };
   failures: string[];
+  regressions: string[];
 };
 
 export type BenchmarkReport = {
+  schema_version: "crux.benchmark.report.v1";
+  generated_at: string;
   passed: boolean;
-  scenario_count: number;
+  summary: {
+    scenario_count: number;
+    passed_count: number;
+    failed_count: number;
+    regression_count: number;
+  };
+  baseline?: {
+    path: string;
+    regression_threshold: number;
+  };
   results: BenchmarkScenarioResult[];
+};
+
+export type BenchmarkBaseline = {
+  schema_version: "crux.benchmark.baseline.v1";
+  description?: string;
+  scenarios: Record<
+    string,
+    {
+      scores: Partial<EvalReport["scores"]>;
+      artifact_counts?: Partial<BenchmarkScenarioResult["artifact_counts"]>;
+    }
+  >;
+};
+
+export type BenchmarkOptions = {
+  scenariosDir?: string;
+  expectationsDir?: string;
+  baselinePath?: string;
+  regressionThreshold?: number;
 };
 
 export async function runBenchmark(
   projectRoot: string,
-  scenariosDir = "e2e/scenarios",
-  expectationsDir = "e2e/expectations"
+  options: BenchmarkOptions | string = {},
+  legacyExpectationsDir?: string
 ): Promise<BenchmarkReport> {
+  const normalizedOptions = normalizeOptions(options, legacyExpectationsDir);
+  const scenariosDir = normalizedOptions.scenariosDir;
+  const expectationsDir = normalizedOptions.expectationsDir;
   const absoluteScenariosDir = path.resolve(projectRoot, scenariosDir);
+  const baseline = normalizedOptions.baselinePath
+    ? await readBaseline(path.resolve(projectRoot, normalizedOptions.baselinePath))
+    : undefined;
   const scenarioFiles = (await readdir(absoluteScenariosDir))
     .filter((file) => file.endsWith(".yaml") || file.endsWith(".yml"))
     .sort();
@@ -42,31 +86,67 @@ export async function runBenchmark(
   const results: BenchmarkScenarioResult[] = [];
 
   for (const scenarioFile of scenarioFiles) {
+    const startedAt = performance.now();
     const scenarioPath = path.join(absoluteScenariosDir, scenarioFile);
     const scenarioName = path.basename(scenarioFile).replace(/\.(yaml|yml)$/i, "");
     const expectationPath = path.resolve(projectRoot, expectationsDir, `${scenarioName}.json`);
     const expectation = await readExpectation(expectationPath);
     const run = await runHarness(projectRoot, scenarioPath);
     const integrity = await validateRunIntegrity(projectRoot, run.runDir);
-    const expectationFailures = await checkBenchmarkExpectation(run.runDir, expectation);
-    const failures = [...integrity.failures, ...expectationFailures];
+    const expectationResult = await checkBenchmarkExpectation(run.runDir, expectation);
+    const regressions = baseline
+      ? compareToBaseline(
+          scenarioName,
+          expectationResult.scores,
+          expectationResult.artifact_counts,
+          baseline,
+          normalizedOptions.regressionThreshold
+        )
+      : [];
+    const failures = [...integrity.failures, ...expectationResult.failures, ...regressions];
 
     results.push({
       scenario: scenarioName,
       runDir: path.relative(projectRoot, run.runDir),
       passed: failures.length === 0,
-      failures
+      duration_ms: round(performance.now() - startedAt),
+      scores: expectationResult.scores,
+      artifact_counts: expectationResult.artifact_counts,
+      failures,
+      regressions
     });
   }
 
+  const passedCount = results.filter((result) => result.passed).length;
+  const regressionCount = results.reduce((sum, result) => sum + result.regressions.length, 0);
+
   return {
+    schema_version: "crux.benchmark.report.v1",
+    generated_at: new Date().toISOString(),
     passed: results.every((result) => result.passed),
-    scenario_count: results.length,
+    summary: {
+      scenario_count: results.length,
+      passed_count: passedCount,
+      failed_count: results.length - passedCount,
+      regression_count: regressionCount
+    },
+    baseline: normalizedOptions.baselinePath
+      ? {
+          path: normalizedOptions.baselinePath,
+          regression_threshold: normalizedOptions.regressionThreshold
+        }
+      : undefined,
     results
   };
 }
 
-export async function checkBenchmarkExpectation(runDir: string, expectation: BenchmarkExpectation): Promise<string[]> {
+export type BenchmarkExpectationResult = {
+  failures: string[];
+  scores: EvalReport["scores"];
+  artifact_counts: BenchmarkScenarioResult["artifact_counts"];
+};
+
+export async function checkBenchmarkExpectation(runDir: string, expectation: BenchmarkExpectation): Promise<BenchmarkExpectationResult> {
   const failures: string[] = [];
   const [claims, evidence, contradictions, memo, redTeam, evalReport, questionSpec] = await Promise.all([
     readJson<ClaimsArtifact>(runDir, "claims.json"),
@@ -133,11 +213,80 @@ export async function checkBenchmarkExpectation(runDir: string, expectation: Ben
     }
   }
 
-  return failures;
+  return {
+    failures,
+    scores: evalReport.scores,
+    artifact_counts: {
+      claims: claims.claims.length,
+      evidence: evidence.evidence.length,
+      contradictions: contradictions.contradictions.length
+    }
+  };
+}
+
+export async function writeBenchmarkReport(reportPath: string, report: BenchmarkReport): Promise<void> {
+  await mkdir(path.dirname(reportPath), { recursive: true });
+  await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+}
+
+function compareToBaseline(
+  scenario: string,
+  scores: EvalReport["scores"],
+  artifactCounts: BenchmarkScenarioResult["artifact_counts"],
+  baseline: BenchmarkBaseline,
+  regressionThreshold: number
+): string[] {
+  const expected = baseline.scenarios[scenario];
+  if (!expected) {
+    return [`${scenario}: missing scenario in baseline.`];
+  }
+
+  const regressions: string[] = [];
+  for (const [scoreName, baselineScore] of Object.entries(expected.scores)) {
+    const actual = scores[scoreName as keyof EvalReport["scores"]];
+    if (actual === undefined) {
+      regressions.push(`${scenario}: missing score ${scoreName} for baseline comparison.`);
+    } else if (actual < baselineScore - regressionThreshold) {
+      regressions.push(`${scenario}: ${scoreName} regressed from ${baselineScore} to ${actual} with threshold ${regressionThreshold}.`);
+    }
+  }
+
+  for (const [countName, baselineCount] of Object.entries(expected.artifact_counts ?? {})) {
+    const actual = artifactCounts[countName as keyof BenchmarkScenarioResult["artifact_counts"]];
+    if (actual === undefined) {
+      regressions.push(`${scenario}: missing artifact count ${countName} for baseline comparison.`);
+    } else if (actual < baselineCount) {
+      regressions.push(`${scenario}: ${countName} count regressed from ${baselineCount} to ${actual}.`);
+    }
+  }
+
+  return regressions;
+}
+
+function normalizeOptions(options: BenchmarkOptions | string, legacyExpectationsDir?: string): Required<BenchmarkOptions> {
+  if (typeof options === "string") {
+    return {
+      scenariosDir: options,
+      expectationsDir: legacyExpectationsDir ?? "e2e/expectations",
+      baselinePath: "",
+      regressionThreshold: 0.02
+    };
+  }
+
+  return {
+    scenariosDir: options.scenariosDir ?? "e2e/scenarios",
+    expectationsDir: options.expectationsDir ?? "e2e/expectations",
+    baselinePath: options.baselinePath ?? "",
+    regressionThreshold: options.regressionThreshold ?? 0.02
+  };
 }
 
 async function readExpectation(expectationPath: string): Promise<BenchmarkExpectation> {
   return JSON.parse(await readFile(expectationPath, "utf8")) as BenchmarkExpectation;
+}
+
+async function readBaseline(baselinePath: string): Promise<BenchmarkBaseline> {
+  return JSON.parse(await readFile(baselinePath, "utf8")) as BenchmarkBaseline;
 }
 
 async function readJson<T>(runDir: string, file: string): Promise<T> {
@@ -148,3 +297,6 @@ async function readText(runDir: string, file: string): Promise<string> {
   return readFile(path.join(runDir, file), "utf8");
 }
 
+function round(value: number): number {
+  return Math.round(value * 100) / 100;
+}

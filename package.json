@@ -11,7 +11,7 @@
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test dist/tests/*.test.js",
     "crux": "npm run build --silent && node dist/src/cli.js",
-    "benchmark": "npm run crux -- benchmark"
+    "benchmark": "npm run crux -- benchmark --report test-results/benchmark-latest.json"
   },
   "dependencies": {
     "ajv": "^8.17.1",
