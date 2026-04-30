@@ -20,6 +20,7 @@ Required files:
 input.yaml
 question_spec.json
 source_inventory.json
+source_chunks.json
 claims.json
 evidence.json
 contradictions.json
@@ -93,6 +94,30 @@ Each source includes:
 - `tags`
 - `content_hash`
 
+## source_chunks.json
+
+Stable text chunks derived from source-pack files.
+
+Required fields:
+
+- `source_pack`
+- `chunks`
+
+Each chunk includes:
+
+- `id`
+- `source_id`
+- `path`
+- `ordinal`
+- `text`
+- `content_hash`
+
+Chunk IDs use the format:
+
+```text
+S1#chunk-001
+```
+
 ## claims.json
 
 The claim graph.
@@ -157,9 +182,10 @@ Each evidence item includes:
 Optional source-grounding fields:
 
 - `source_ids`
+- `chunk_ids`
 - `excerpt`
 
-In source-grounded mode, every non-calculation evidence item must include at least one `source_id`.
+In source-grounded mode, every non-calculation evidence item must include at least one `source_id`, at least one `chunk_id`, and an `excerpt` that appears in the cited source chunk text.
 
 Allowed source types:
 

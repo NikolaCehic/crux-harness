@@ -27,6 +27,7 @@ runs/<run_id>/
   input.yaml
   question_spec.json
   source_inventory.json
+  source_chunks.json
   claims.json
   evidence.json
   contradictions.json
@@ -118,3 +119,5 @@ The placeholder evidence is deliberately marked as limited. This version proves 
 The deterministic generator is scope-aware for benchmark coverage. It currently supports strategic technology, investment diligence, policy analysis, product strategy, scientific thesis evaluation, market entry, and root-cause analysis scenarios.
 
 Crux v0.2 adds source-grounded evidence mode for source-pack scenarios. The strategic technology benchmark now ingests `sources/strategic-tech`, writes `source_inventory.json`, and requires source-backed evidence instead of placeholder evidence.
+
+Crux v0.3 adds source chunking and provenance verification. Source-pack runs now write `source_chunks.json`, evidence items cite stable chunk IDs like `S1#chunk-001`, and integrity checks reject forged excerpts that do not appear in cited source chunks.

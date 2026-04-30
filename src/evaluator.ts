@@ -6,6 +6,7 @@ import type {
   EvalReport,
   EvidenceArtifact,
   QuestionSpec,
+  SourceChunksArtifact,
   SourceInventory,
   UncertaintyArtifact
 } from "./types.js";
@@ -14,6 +15,7 @@ import { ArtifactValidator, schemaIds } from "./validator.js";
 type LoadedRun = {
   questionSpec?: QuestionSpec;
   sourceInventory?: SourceInventory;
+  sourceChunks?: SourceChunksArtifact;
   claims?: ClaimsArtifact;
   evidence?: EvidenceArtifact;
   contradictions?: ContradictionsArtifact;
@@ -70,9 +72,10 @@ export async function evaluateRun(projectRoot: string, runDir: string): Promise<
 async function loadRun(runDir: string): Promise<LoadedRun> {
   const failedChecks: string[] = [];
 
-  const [questionSpec, sourceInventory, claims, evidence, contradictions, uncertainty, redTeam, decisionMemo] = await Promise.all([
+  const [questionSpec, sourceInventory, sourceChunks, claims, evidence, contradictions, uncertainty, redTeam, decisionMemo] = await Promise.all([
     readJson<QuestionSpec>(runDir, "question_spec.json", failedChecks),
     readJson<SourceInventory>(runDir, "source_inventory.json", failedChecks),
+    readJson<SourceChunksArtifact>(runDir, "source_chunks.json", failedChecks),
     readJson<ClaimsArtifact>(runDir, "claims.json", failedChecks),
     readJson<EvidenceArtifact>(runDir, "evidence.json", failedChecks),
     readJson<ContradictionsArtifact>(runDir, "contradictions.json", failedChecks),
@@ -81,7 +84,7 @@ async function loadRun(runDir: string): Promise<LoadedRun> {
     readText(runDir, "decision_memo.md", failedChecks)
   ]);
 
-  return { questionSpec, sourceInventory, claims, evidence, contradictions, uncertainty, redTeam, decisionMemo, failedChecks };
+  return { questionSpec, sourceInventory, sourceChunks, claims, evidence, contradictions, uncertainty, redTeam, decisionMemo, failedChecks };
 }
 
 async function readJson<T>(runDir: string, file: string, failedChecks: string[]): Promise<T | undefined> {
@@ -106,6 +109,7 @@ async function validateLoadedRun(validator: ArtifactValidator, loaded: LoadedRun
   const checks: Array<[string, string, unknown]> = [
     ["question_spec.json", schemaIds.questionSpec, loaded.questionSpec],
     ["source_inventory.json", schemaIds.sourceInventory, loaded.sourceInventory],
+    ["source_chunks.json", schemaIds.sourceChunks, loaded.sourceChunks],
     ["claims.json", schemaIds.claims, loaded.claims],
     ["evidence.json", schemaIds.evidence, loaded.evidence],
     ["contradictions.json", schemaIds.contradictions, loaded.contradictions],
@@ -213,6 +217,10 @@ function buildFindings(loaded: LoadedRun, failedChecks: string[]): string[] {
 
   if (loaded.sourceInventory?.sources.length) {
     findings.push(`Source inventory contains ${loaded.sourceInventory.sources.length} source-backed inputs.`);
+  }
+
+  if (loaded.sourceChunks?.chunks.length) {
+    findings.push(`Source chunks contain ${loaded.sourceChunks.chunks.length} verifiable text chunks.`);
   }
 
   if (loaded.contradictions?.unsupported_critical_claims.length) {

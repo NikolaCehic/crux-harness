@@ -6,10 +6,11 @@ import type {
   EvidenceArtifact,
   QuestionSpec,
   RunInput,
+  SourceChunksArtifact,
   SourceInventory,
-  SourceItem,
   UncertaintyArtifact
 } from "./types.js";
+import { mapSourceGroundedEvidence } from "./evidence-mapper.js";
 
 type ScopeProfile = {
   scope: string;
@@ -59,6 +60,7 @@ export function buildQuestionSpec(input: RunInput): QuestionSpec {
     ],
     required_artifacts: [
       "source_inventory.json",
+      "source_chunks.json",
       "claims.json",
       "evidence.json",
       "contradictions.json",
@@ -110,9 +112,13 @@ export function buildClaims(input: RunInput): ClaimsArtifact {
   };
 }
 
-export function buildEvidence(input: RunInput, sourceInventory?: SourceInventory): EvidenceArtifact {
+export function buildEvidence(input: RunInput, sourceInventory?: SourceInventory, sourceChunks?: SourceChunksArtifact): EvidenceArtifact {
   if (sourceInventory && sourceInventory.sources.length > 0) {
-    return buildSourceGroundedEvidence(input, sourceInventory);
+    if (!sourceChunks) {
+      throw new Error("Source-grounded evidence requires source chunks.");
+    }
+
+    return mapSourceGroundedEvidence(input, sourceInventory, sourceChunks);
   }
 
   const profile = getScopeProfile(input);
@@ -127,84 +133,6 @@ export function buildEvidence(input: RunInput, sourceInventory?: SourceInventory
       evidence("E6", "calculation", `${profile.scope} staged validation logic`, `A narrow staged test lets the decision maker validate ${profile.subject} faster and with lower downside than a full commitment.`, ["C6", "C9", "C10"], [], 0.6, 0.7, 0.8, "Reasoned calculation, not empirical proof."),
       evidence("E7", "model_output", `${profile.scope} adoption blocker hypothesis`, `${profile.adoptionBlocker}`, ["C3", "C7", "C12"], [], 0.5, 0.62, 0.78, "Needs source-backed validation."),
       evidence("E8", "expert_input", `${profile.scope} validation plan placeholder`, `${profile.validationTest} can reveal whether ${profile.cruxCondition}.`, ["C9", "C10", "C12"], [], 0.58, 0.66, 0.74, "Assumes access to qualified evidence and stakeholders.")
-    ]
-  };
-}
-
-function buildSourceGroundedEvidence(input: RunInput, sourceInventory: SourceInventory): EvidenceArtifact {
-  const profile = getScopeProfile(input);
-  const sources = new Map(sourceInventory.sources.map((source) => [source.id, source]));
-
-  return {
-    evidence: [
-      sourceEvidence(
-        "E1",
-        requireSource(sources, "S1"),
-        "McKinsey reports meaningful enterprise agent experimentation and scaling activity, which supports the claim that demand is plausible but still early.",
-        ["C2"],
-        [],
-        "23 percent report scaling agentic AI and 39 percent report experimenting with AI agents."
-      ),
-      sourceEvidence(
-        "E2",
-        requireSource(sources, "S1"),
-        "McKinsey also reports limited enterprise-level EBIT impact, which challenges any assumption that broad AI adoption already guarantees enterprise agent platform ROI.",
-        ["C2", "C5"],
-        ["C1"],
-        "Only 39 percent report EBIT impact at the enterprise level."
-      ),
-      sourceEvidence(
-        "E3",
-        requireSource(sources, "S3"),
-        "OpenAI's agent tooling emphasizes orchestration, guardrails, tracing, and observability, supporting reliability and evaluation as plausible technical wedges.",
-        ["C3", "C6", "C7", "C12"],
-        [],
-        "The Agents SDK includes guardrails plus tracing and observability for agent execution."
-      ),
-      sourceEvidence(
-        "E4",
-        requireSource(sources, "S5"),
-        "Microsoft's agent distribution inside Microsoft 365 suggests incumbent platforms can bundle agent capabilities into existing enterprise workflows.",
-        ["C4", "C8", "C11"],
-        [],
-        "Microsoft describes agent discovery and engagement inside Microsoft 365 Copilot."
-      ),
-      sourceEvidence(
-        "E5",
-        requireSource(sources, "S2"),
-        "Gartner reports that fully autonomous agents are much less mature than general piloting, with governance and maturity concerns limiting deployment.",
-        ["C4", "C5", "C7"],
-        ["C1", "C3", "C12"],
-        "Only 15 percent are considering, piloting, or deploying fully autonomous AI agents."
-      ),
-      evidence(
-        "E6",
-        "calculation",
-        `${profile.scope} staged validation logic`,
-        `Given the sourced evidence of demand, immature scaling, governance constraints, and incumbent distribution, a narrow design-partner test is lower-risk than broad platform buildout.`,
-        ["C6", "C9", "C10"],
-        [],
-        0.72,
-        0.82,
-        0.86,
-        "Reasoned synthesis over source-backed evidence; should be replaced by quantitative pilot data when available."
-      ),
-      sourceEvidence(
-        "E7",
-        requireSource(sources, "S4"),
-        "LangGraph's durable execution documentation supports the view that persistence and recovery are concrete reliability concerns for agent workflows.",
-        ["C3", "C7", "C12"],
-        [],
-        "Durable execution saves workflow state to persistent storage."
-      ),
-      sourceEvidence(
-        "E8",
-        requireSource(sources, "S2"),
-        "Gartner's governance and agent-sprawl concerns support using design partners to validate scope control, governance readiness, and buyer urgency before scaling.",
-        ["C9", "C10", "C12"],
-        [],
-        "Governance, maturity, and agent sprawl hamper deployment of truly agentic systems."
-      )
     ]
   };
 }
@@ -605,39 +533,6 @@ function edge(from: string, to: string, relation: ClaimsArtifact["edges"][number
   return { from, to, relation };
 }
 
-function sourceEvidence(
-  id: string,
-  source: SourceItem,
-  summary: string,
-  supports_claim_ids: string[],
-  challenges_claim_ids: string[],
-  excerpt: string
-): EvidenceArtifact["evidence"][number] {
-  return evidence(
-    id,
-    source.source_type,
-    source.citation,
-    summary,
-    supports_claim_ids,
-    challenges_claim_ids,
-    source.reliability,
-    source.recency,
-    source.relevance,
-    "Source-backed evidence from local source pack.",
-    [source.id],
-    excerpt
-  );
-}
-
-function requireSource(sources: Map<string, SourceItem>, sourceId: string): SourceItem {
-  const source = sources.get(sourceId);
-  if (!source) {
-    throw new Error(`Source pack is missing required source ${sourceId}`);
-  }
-
-  return source;
-}
-
 function evidence(
   id: string,
   source_type: EvidenceArtifact["evidence"][number]["source_type"],
@@ -649,7 +544,6 @@ function evidence(
   recency: number,
   relevance: number,
   limitations: string,
-  source_ids: string[] = [],
   excerpt = ""
 ): EvidenceArtifact["evidence"][number] {
   return {
@@ -657,7 +551,6 @@ function evidence(
     source_type,
     citation,
     summary,
-    ...(source_ids.length > 0 ? { source_ids } : {}),
     ...(excerpt ? { excerpt } : {}),
     supports_claim_ids,
     challenges_claim_ids,

@@ -90,6 +90,23 @@ Purpose:
 
 Make Crux unable to fake evidence before adding LLM-powered evidence mapping.
 
+## Milestone 2.6: Evidence Mapper And Provenance Verifier
+
+Status: implemented for the strategic technology benchmark.
+
+Deliverables:
+
+- source chunking
+- `source_chunks.json` schema
+- evidence mapper boundary
+- stable `chunk_ids`
+- verified evidence excerpts
+- corruption tests for forged excerpts
+
+Purpose:
+
+Make Crux prove that source-backed evidence came from cited source text.
+
 ## Milestone 4: Web Research Mode
 
 Deliverables:

@@ -61,11 +61,13 @@ Inputs:
 Outputs:
 
 - `source_inventory.json`
+- `source_chunks.json`
 
 Responsibilities:
 
 - resolve the optional source pack
 - inventory local source files
+- chunk source text into stable chunk IDs
 - preserve source citations and URLs
 - compute content hashes
 - validate source metadata
@@ -76,6 +78,7 @@ Inputs:
 
 - `question_spec.json`
 - `source_inventory.json`
+- `source_chunks.json`
 
 Outputs:
 
@@ -95,6 +98,7 @@ Inputs:
 - `question_spec.json`
 - `claims.json`
 - `source_inventory.json`
+- `source_chunks.json`
 
 Outputs:
 
@@ -222,6 +226,8 @@ v0.2 supports three source modes:
 The default for early development is `offline` or curated examples, so harness behavior can be tested before relying on live search.
 
 Offline source-pack mode is the first supported grounding mechanism. Inputs may point at a local `source_pack`, and the harness writes `source_inventory.json` before evidence generation.
+
+Source-pack runs also write `source_chunks.json`. Evidence can cite source chunks with IDs like `S1#chunk-001`, and provenance checks verify that evidence excerpts appear in the cited chunks.
 
 ## Replay Policy
 

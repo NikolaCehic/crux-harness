@@ -120,7 +120,9 @@
         "evidence": 8,
         "contradictions": 3,
         "sources": 5,
-        "source_backed_evidence": 7
+        "source_chunks": 14,
+        "source_backed_evidence": 7,
+        "verified_excerpts": 7
       }
     }
   }

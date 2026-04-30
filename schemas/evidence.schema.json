@@ -33,6 +33,10 @@
             "type": "array",
             "items": { "type": "string", "pattern": "^S[0-9]+$" }
           },
+          "chunk_ids": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^S[0-9]+#chunk-[0-9]{3}$" }
+          },
           "excerpt": { "type": "string" },
           "supports_claim_ids": {
             "type": "array",

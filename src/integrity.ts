@@ -7,6 +7,7 @@ import type {
   EvalReport,
   EvidenceArtifact,
   QuestionSpec,
+  SourceChunksArtifact,
   SourceInventory,
   TraceEvent,
   UncertaintyArtifact
@@ -22,6 +23,7 @@ const requiredFiles = [
   "input.yaml",
   "question_spec.json",
   "source_inventory.json",
+  "source_chunks.json",
   "claims.json",
   "evidence.json",
   "contradictions.json",
@@ -57,6 +59,7 @@ export async function validateRunIntegrity(projectRoot: string, runDir: string):
   const validator = new ArtifactValidator(path.join(projectRoot, "schemas"));
   const questionSpec = await readJson<QuestionSpec>(absoluteRunDir, "question_spec.json", failures);
   const sourceInventory = await readJson<SourceInventory>(absoluteRunDir, "source_inventory.json", failures);
+  const sourceChunks = await readJson<SourceChunksArtifact>(absoluteRunDir, "source_chunks.json", failures);
   const claims = await readJson<ClaimsArtifact>(absoluteRunDir, "claims.json", failures);
   const evidence = await readJson<EvidenceArtifact>(absoluteRunDir, "evidence.json", failures);
   const contradictions = await readJson<ContradictionsArtifact>(absoluteRunDir, "contradictions.json", failures);
@@ -68,6 +71,7 @@ export async function validateRunIntegrity(projectRoot: string, runDir: string):
 
   await validateSchema(validator, schemaIds.questionSpec, "question_spec.json", questionSpec, failures);
   await validateSchema(validator, schemaIds.sourceInventory, "source_inventory.json", sourceInventory, failures);
+  await validateSchema(validator, schemaIds.sourceChunks, "source_chunks.json", sourceChunks, failures);
   await validateSchema(validator, schemaIds.claims, "claims.json", claims, failures);
   await validateSchema(validator, schemaIds.evidence, "evidence.json", evidence, failures);
   await validateSchema(validator, schemaIds.contradictions, "contradictions.json", contradictions, failures);
@@ -78,8 +82,8 @@ export async function validateRunIntegrity(projectRoot: string, runDir: string):
     validateClaimEvidenceGraph(claims, evidence, contradictions, failures);
   }
 
-  if (sourceInventory && evidence) {
-    validateSourceProvenance(projectRoot, sourceInventory, evidence, failures);
+  if (sourceInventory && sourceChunks && evidence) {
+    validateSourceProvenance(projectRoot, sourceInventory, sourceChunks, evidence, failures);
   }
 
   if (uncertainty) {
@@ -127,10 +131,12 @@ export async function validateRunIntegrity(projectRoot: string, runDir: string):
 function validateSourceProvenance(
   projectRoot: string,
   sourceInventory: SourceInventory,
+  sourceChunks: SourceChunksArtifact,
   evidenceArtifact: EvidenceArtifact,
   failures: string[]
 ): void {
   const sourceIds = new Set(sourceInventory.sources.map((source) => source.id));
+  const chunksById = new Map(sourceChunks.chunks.map((chunk) => [chunk.id, chunk]));
 
   for (const source of sourceInventory.sources) {
     if (!existsSync(path.resolve(projectRoot, source.path))) {
@@ -141,6 +147,14 @@ function validateSourceProvenance(
   for (const item of evidenceArtifact.evidence) {
     for (const sourceId of item.source_ids ?? []) {
       assertKnown(sourceId, sourceIds, `Evidence ${item.id} references unknown source ${sourceId}.`, failures);
+    }
+    for (const chunkId of item.chunk_ids ?? []) {
+      const chunk = chunksById.get(chunkId);
+      if (!chunk) {
+        failures.push(`Evidence ${item.id} references unknown source chunk ${chunkId}.`);
+      } else if ((item.source_ids ?? []).length > 0 && !(item.source_ids ?? []).includes(chunk.source_id)) {
+        failures.push(`Evidence ${item.id} chunk ${chunkId} does not belong to cited sources ${item.source_ids?.join(", ")}.`);
+      }
     }
   }
 
@@ -156,7 +170,34 @@ function validateSourceProvenance(
     if (item.source_type !== "calculation" && (item.source_ids ?? []).length === 0) {
       failures.push(`Evidence ${item.id} is source-backed mode evidence but has no source_ids.`);
     }
+
+    if (item.source_type !== "calculation" && (item.chunk_ids ?? []).length === 0) {
+      failures.push(`Evidence ${item.id} is source-backed mode evidence but has no chunk_ids.`);
+    }
+
+    if (item.source_type !== "calculation" && !item.excerpt) {
+      failures.push(`Evidence ${item.id} is source-backed mode evidence but has no excerpt.`);
+    }
+
+    if (item.excerpt && (item.chunk_ids ?? []).length > 0) {
+      const matchingChunk = (item.chunk_ids ?? [])
+        .map((chunkId) => chunksById.get(chunkId))
+        .filter((chunk): chunk is NonNullable<typeof chunk> => Boolean(chunk))
+        .some((chunk) => includesExcerpt(chunk.text, item.excerpt ?? ""));
+
+      if (!matchingChunk) {
+        failures.push(`Evidence ${item.id} excerpt is not present in its cited source chunks.`);
+      }
+    }
   }
+}
+
+function includesExcerpt(chunkText: string, excerpt: string): boolean {
+  return normalizeForExcerpt(chunkText).includes(normalizeForExcerpt(excerpt));
+}
+
+function normalizeForExcerpt(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
 async function validateSchema(

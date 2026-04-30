@@ -51,6 +51,7 @@ export class ArtifactValidator {
 export const schemaIds = {
   questionSpec: "https://crux.local/schemas/question_spec.schema.json",
   sourceInventory: "https://crux.local/schemas/source_inventory.schema.json",
+  sourceChunks: "https://crux.local/schemas/source_chunks.schema.json",
   claims: "https://crux.local/schemas/claims.schema.json",
   evidence: "https://crux.local/schemas/evidence.schema.json",
   contradictions: "https://crux.local/schemas/contradictions.schema.json",

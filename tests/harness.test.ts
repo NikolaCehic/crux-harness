@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { validateRunIntegrity } from "../src/integrity.js";
@@ -16,6 +16,7 @@ test("runHarness creates a complete, schema-valid deterministic run", async () =
     "input.yaml",
     "question_spec.json",
     "source_inventory.json",
+    "source_chunks.json",
     "claims.json",
     "evidence.json",
     "contradictions.json",
@@ -39,6 +40,13 @@ test("runHarness creates a complete, schema-valid deterministic run", async () =
   const sourceInventory = JSON.parse(await readFile(path.join(result.runDir, "source_inventory.json"), "utf8"));
   assert.equal(sourceInventory.sources.length, 5);
 
+  const sourceChunks = JSON.parse(await readFile(path.join(result.runDir, "source_chunks.json"), "utf8"));
+  assert.equal(sourceChunks.chunks.length >= 5, true);
+  assert.equal(sourceChunks.chunks.every((chunk: { id: string; source_id: string; text: string }) => {
+    return /^S[0-9]+#chunk-[0-9]{3}$/.test(chunk.id) && chunk.source_id && chunk.text.length > 0;
+  }), true);
+  assert.equal(evidence.evidence.filter((item: { chunk_ids?: string[] }) => (item.chunk_ids ?? []).length > 0).length >= 5, true);
+
   const evalReport = JSON.parse(await readFile(path.join(result.runDir, "eval_report.json"), "utf8"));
   assert.equal(evalReport.scores.schema_validity, 1);
   assert.deepEqual(evalReport.failed_checks, []);
@@ -49,6 +57,30 @@ test("runHarness creates a complete, schema-valid deterministic run", async () =
   const integrity = await validateRunIntegrity(projectRoot, result.runDir);
   assert.deepEqual(integrity.failures, []);
   assert.equal(integrity.valid, true);
+});
+
+test("run integrity rejects source-backed evidence with forged excerpts", async () => {
+  const result = await runHarness(projectRoot, exampleInput);
+  const evidencePath = path.join(result.runDir, "evidence.json");
+  const evidence = JSON.parse(await readFile(evidencePath, "utf8"));
+  evidence.evidence[0].excerpt = "This sentence is not present in the cited source chunk.";
+  await writeFile(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
+
+  const integrity = await validateRunIntegrity(projectRoot, result.runDir);
+  assert.equal(integrity.valid, false);
+  assert.equal(integrity.failures.some((failure) => failure.includes("excerpt") && failure.includes("E1")), true);
+});
+
+test("run integrity rejects evidence whose chunks do not belong to cited sources", async () => {
+  const result = await runHarness(projectRoot, exampleInput);
+  const evidencePath = path.join(result.runDir, "evidence.json");
+  const evidence = JSON.parse(await readFile(evidencePath, "utf8"));
+  evidence.evidence[0].source_ids = ["S2"];
+  await writeFile(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
+
+  const integrity = await validateRunIntegrity(projectRoot, result.runDir);
+  assert.equal(integrity.valid, false);
+  assert.equal(integrity.failures.some((failure) => failure.includes("E1") && failure.includes("does not belong")), true);
 });
 
 test("rerunEvaluation rewrites eval_report.json for an existing run", async () => {

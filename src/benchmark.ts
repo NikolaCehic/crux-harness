@@ -1,6 +1,6 @@
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { ClaimsArtifact, EvalReport, EvidenceArtifact, SourceInventory } from "./types.js";
+import type { ClaimsArtifact, EvalReport, EvidenceArtifact, SourceChunksArtifact, SourceInventory } from "./types.js";
 import { validateRunIntegrity } from "./integrity.js";
 import { runHarness } from "./pipeline.js";
 
@@ -16,6 +16,7 @@ export type BenchmarkExpectation = {
   requires_source_pack?: boolean;
   forbid_placeholder_evidence?: boolean;
   min_source_backed_evidence?: number;
+  requires_verified_excerpts?: boolean;
   min_scores: Record<string, number>;
 };
 
@@ -30,7 +31,9 @@ export type BenchmarkScenarioResult = {
     evidence: number;
     contradictions: number;
     sources: number;
+    source_chunks: number;
     source_backed_evidence: number;
+    verified_excerpts: number;
   };
   failures: string[];
   regressions: string[];
@@ -153,11 +156,12 @@ export type BenchmarkExpectationResult = {
 
 export async function checkBenchmarkExpectation(runDir: string, expectation: BenchmarkExpectation): Promise<BenchmarkExpectationResult> {
   const failures: string[] = [];
-  const [claims, evidence, contradictions, sourceInventory, memo, redTeam, evalReport, questionSpec] = await Promise.all([
+  const [claims, evidence, contradictions, sourceInventory, sourceChunks, memo, redTeam, evalReport, questionSpec] = await Promise.all([
     readJson<ClaimsArtifact>(runDir, "claims.json"),
     readJson<EvidenceArtifact>(runDir, "evidence.json"),
     readJson<{ contradictions: unknown[] }>(runDir, "contradictions.json"),
     readJson<SourceInventory>(runDir, "source_inventory.json"),
+    readJson<SourceChunksArtifact>(runDir, "source_chunks.json"),
     readText(runDir, "decision_memo.md"),
     readText(runDir, "red_team.md"),
     readJson<EvalReport>(runDir, "eval_report.json"),
@@ -181,8 +185,13 @@ export async function checkBenchmarkExpectation(runDir: string, expectation: Ben
   }
 
   const sourceBackedEvidence = evidence.evidence.filter((item) => (item.source_ids ?? []).length > 0).length;
+  const verifiedExcerpts = countVerifiedExcerpts(evidence, sourceChunks);
   if (expectation.min_source_backed_evidence !== undefined && sourceBackedEvidence < expectation.min_source_backed_evidence) {
     failures.push(`${expectation.scenario_id}: expected at least ${expectation.min_source_backed_evidence} source-backed evidence items, got ${sourceBackedEvidence}.`);
+  }
+
+  if (expectation.requires_verified_excerpts && verifiedExcerpts < sourceBackedEvidence) {
+    failures.push(`${expectation.scenario_id}: expected all source-backed evidence excerpts to verify, got ${verifiedExcerpts}/${sourceBackedEvidence}.`);
   }
 
   if (expectation.forbid_placeholder_evidence) {
@@ -246,9 +255,32 @@ export async function checkBenchmarkExpectation(runDir: string, expectation: Ben
       evidence: evidence.evidence.length,
       contradictions: contradictions.contradictions.length,
       sources: sourceInventory.sources.length,
-      source_backed_evidence: sourceBackedEvidence
+      source_chunks: sourceChunks.chunks.length,
+      source_backed_evidence: sourceBackedEvidence,
+      verified_excerpts: verifiedExcerpts
     }
   };
+}
+
+function countVerifiedExcerpts(evidence: EvidenceArtifact, sourceChunks: SourceChunksArtifact): number {
+  const chunksById = new Map(sourceChunks.chunks.map((chunk) => [chunk.id, chunk.text]));
+  return evidence.evidence.filter((item) => {
+    if ((item.source_ids ?? []).length === 0) {
+      return false;
+    }
+    if (!item.excerpt || (item.chunk_ids ?? []).length === 0) {
+      return false;
+    }
+
+    return item.chunk_ids?.some((chunkId) => {
+      const chunkText = chunksById.get(chunkId);
+      return chunkText ? normalizeForExcerpt(chunkText).includes(normalizeForExcerpt(item.excerpt ?? "")) : false;
+    }) ?? false;
+  }).length;
+}
+
+function normalizeForExcerpt(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
 export async function writeBenchmarkReport(reportPath: string, report: BenchmarkReport): Promise<void> {

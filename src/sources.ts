@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import type { RunInput, SourceInventory, SourceItem } from "./types.js";
+import type { RunInput, SourceChunksArtifact, SourceChunk, SourceInventory, SourceItem } from "./types.js";
 
 type ParsedSource = {
   metadata: Record<string, string>;
@@ -51,6 +51,41 @@ export async function buildSourceInventory(projectRoot: string, input: RunInput)
       mode: "directory"
     },
     sources
+  };
+}
+
+export async function buildSourceChunks(projectRoot: string, sourceInventory: SourceInventory): Promise<SourceChunksArtifact> {
+  if (sourceInventory.sources.length === 0) {
+    return {
+      source_pack: sourceInventory.source_pack,
+      chunks: []
+    };
+  }
+
+  const chunks: SourceChunk[] = [];
+  const sources = [...sourceInventory.sources].sort((a, b) => a.id.localeCompare(b.id, "en", { numeric: true }));
+
+  for (const source of sources) {
+    const raw = await readFile(path.resolve(projectRoot, source.path), "utf8");
+    const parsed = parseSourceFile(raw);
+    const textChunks = chunkText(parsed.body);
+
+    textChunks.forEach((text, index) => {
+      const ordinal = index + 1;
+      chunks.push({
+        id: `${source.id}#chunk-${String(ordinal).padStart(3, "0")}`,
+        source_id: source.id,
+        path: source.path,
+        ordinal,
+        text,
+        content_hash: createHash("sha256").update(text).digest("hex")
+      });
+    });
+  }
+
+  return {
+    source_pack: sourceInventory.source_pack,
+    chunks
   };
 }
 
@@ -147,3 +182,12 @@ function firstParagraph(body: string): string {
   return body.split(/\n\s*\n/).find((paragraph) => paragraph.trim().length > 0)?.trim() ?? "No summary provided.";
 }
 
+function chunkText(body: string): string[] {
+  const paragraphs = body
+    .replace(/\r\n/g, "\n")
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim().replace(/\s+/g, " "))
+    .filter(Boolean);
+
+  return paragraphs.length > 0 ? paragraphs : ["No source text provided."];
+}

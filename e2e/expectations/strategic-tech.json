@@ -10,6 +10,7 @@
   "requires_source_pack": true,
   "forbid_placeholder_evidence": true,
   "min_source_backed_evidence": 5,
+  "requires_verified_excerpts": true,
   "min_scores": {
     "schema_validity": 1,
     "claim_coverage": 0.75,

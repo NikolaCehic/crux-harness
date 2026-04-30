@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crux.local/schemas/source_chunks.schema.json",
+  "title": "SourceChunks",
+  "type": "object",
+  "required": ["source_pack", "chunks"],
+  "properties": {
+    "source_pack": {
+      "type": "object",
+      "required": ["path", "mode"],
+      "properties": {
+        "path": {
+          "type": ["string", "null"]
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["none", "directory"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "chunks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "source_id", "path", "ordinal", "text", "content_hash"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^S[0-9]+#chunk-[0-9]{3}$" },
+          "source_id": { "type": "string", "pattern": "^S[0-9]+$" },
+          "path": { "type": "string", "minLength": 1 },
+          "ordinal": { "type": "integer", "minimum": 1 },
+          "text": { "type": "string", "minLength": 1 },
+          "content_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
+

@@ -58,6 +58,23 @@ export type SourceItem = {
   content_hash: string;
 };
 
+export type SourceChunksArtifact = {
+  source_pack: {
+    path: string | null;
+    mode: "none" | "directory";
+  };
+  chunks: SourceChunk[];
+};
+
+export type SourceChunk = {
+  id: string;
+  source_id: string;
+  path: string;
+  ordinal: number;
+  text: string;
+  content_hash: string;
+};
+
 export type Claim = {
   id: string;
   text: string;
@@ -87,6 +104,7 @@ export type EvidenceItem = {
   citation: string;
   summary: string;
   source_ids?: string[];
+  chunk_ids?: string[];
   excerpt?: string;
   supports_claim_ids: string[];
   challenges_claim_ids: string[];
