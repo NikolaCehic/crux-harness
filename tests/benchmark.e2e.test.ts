@@ -9,6 +9,16 @@ import { runBenchmark } from "../src/benchmark.js";
 const execFileAsync = promisify(execFile);
 const projectRoot = process.cwd();
 const cliPath = "dist/src/cli.js";
+const deterministicEnv = {
+  ...process.env,
+  CRUX_EVIDENCE_MAPPER: "deterministic",
+  CRUX_LLM_PROVIDER: "",
+  CRUX_LLM_API_KEY: ""
+};
+
+process.env.CRUX_EVIDENCE_MAPPER = "deterministic";
+delete process.env.CRUX_LLM_PROVIDER;
+delete process.env.CRUX_LLM_API_KEY;
 
 test("benchmark runner passes all scoped scenarios", async () => {
   const report = await runBenchmark(projectRoot);
@@ -36,7 +46,7 @@ test("benchmark runner compares against the committed baseline", async () => {
 });
 
 test("compiled CLI runs the full benchmark suite as a black-box command", async () => {
-  const { stdout } = await execFileAsync(process.execPath, [cliPath, "benchmark"], { cwd: projectRoot });
+  const { stdout } = await execFileAsync(process.execPath, [cliPath, "benchmark"], { cwd: projectRoot, env: deterministicEnv });
 
   assert.match(stdout, /PASS investment-diligence/);
   assert.match(stdout, /PASS policy-analysis/);
@@ -50,7 +60,7 @@ test("compiled CLI runs the full benchmark suite as a black-box command", async 
 
 test("compiled CLI writes a machine-readable benchmark report", async () => {
   const reportPath = `test-results/benchmark-e2e-${process.pid}-${Date.now()}.json`;
-  const { stdout } = await execFileAsync(process.execPath, [cliPath, "benchmark", "--report", reportPath], { cwd: projectRoot });
+  const { stdout } = await execFileAsync(process.execPath, [cliPath, "benchmark", "--report", reportPath], { cwd: projectRoot, env: deterministicEnv });
   assert.match(stdout, new RegExp(`Report written: ${reportPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
 
   const report = JSON.parse(await readFile(path.join(projectRoot, reportPath), "utf8"));
@@ -101,15 +111,15 @@ test("benchmark runner fails when a baseline score regresses past the threshold"
 });
 
 test("compiled CLI lifecycle supports run, eval, and replay", async () => {
-  const run = await execFileAsync(process.execPath, [cliPath, "run", "e2e/scenarios/product-strategy.yaml"], { cwd: projectRoot });
+  const run = await execFileAsync(process.execPath, [cliPath, "run", "e2e/scenarios/product-strategy.yaml"], { cwd: projectRoot, env: deterministicEnv });
   const runMatch = run.stdout.match(/Run complete: (.+)/);
   assert.ok(runMatch, "run command should print the run directory");
   const runDir = runMatch[1].trim();
 
-  const evaluation = await execFileAsync(process.execPath, [cliPath, "eval", runDir], { cwd: projectRoot });
+  const evaluation = await execFileAsync(process.execPath, [cliPath, "eval", runDir], { cwd: projectRoot, env: deterministicEnv });
   assert.match(evaluation.stdout, /Eval complete:/);
 
-  const replay = await execFileAsync(process.execPath, [cliPath, "replay", runDir], { cwd: projectRoot });
+  const replay = await execFileAsync(process.execPath, [cliPath, "replay", runDir], { cwd: projectRoot, env: deterministicEnv });
   assert.match(replay.stdout, /Replay complete:/);
 });
 

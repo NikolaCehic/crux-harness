@@ -9,6 +9,10 @@ import { replayRun, rerunEvaluation, runHarness } from "../src/pipeline.js";
 const projectRoot = process.cwd();
 const exampleInput = "examples/frontier-agent-platform.yaml";
 
+process.env.CRUX_EVIDENCE_MAPPER = "deterministic";
+delete process.env.CRUX_LLM_PROVIDER;
+delete process.env.CRUX_LLM_API_KEY;
+
 test("runHarness creates a complete, schema-valid deterministic run", async () => {
   const result = await runHarness(projectRoot, exampleInput);
 
@@ -52,7 +56,11 @@ test("runHarness creates a complete, schema-valid deterministic run", async () =
   assert.deepEqual(evalReport.failed_checks, []);
 
   const traceLines = readFileSync(path.join(result.runDir, "trace.jsonl"), "utf8").trim().split("\n");
-  assert.equal(traceLines.length, 18);
+  assert.equal(traceLines.length, 19);
+  const traceEvents = traceLines.map((line) => JSON.parse(line));
+  assert.equal(traceEvents.some((event) => {
+    return event.stage === "gather_evidence" && event.event_type === "info" && event.metadata.mapper_type === "deterministic";
+  }), true);
 
   const integrity = await validateRunIntegrity(projectRoot, result.runDir);
   assert.deepEqual(integrity.failures, []);

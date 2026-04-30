@@ -110,6 +110,8 @@ Responsibilities:
 - summarize evidence
 - map evidence to claim IDs
 - score source reliability and relevance
+- optionally use the LLM evidence mapper when explicitly configured
+- reject LLM evidence that fails schema or provenance checks
 
 ### 6. Verify Claims
 

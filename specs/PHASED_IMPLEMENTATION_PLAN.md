@@ -46,6 +46,8 @@ Acceptance:
 
 ## Phase 2: v0.4 Optional LLM Evidence Mapper
 
+Status: implemented.
+
 Optimality hypothesis: This is the best first LLM phase because the LLM receives one bounded task and every output is checked by schema validation and provenance verification.
 
 Scope:

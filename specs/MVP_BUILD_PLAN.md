@@ -107,6 +107,23 @@ Purpose:
 
 Make Crux prove that source-backed evidence came from cited source text.
 
+## Milestone 3: Optional LLM Evidence Mapper
+
+Status: implemented as an opt-in mode.
+
+Deliverables:
+
+- provider-neutral LLM client interface
+- evidence mapper prompt
+- strict JSON output parsing
+- deterministic fallback
+- trace metadata for mapper selection
+- mocked LLM tests
+
+Purpose:
+
+Allow model-assisted evidence mapping without letting model output bypass schemas or provenance checks.
+
 ## Milestone 4: Web Research Mode
 
 Deliverables:

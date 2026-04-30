@@ -121,6 +121,10 @@ export function buildEvidence(input: RunInput, sourceInventory?: SourceInventory
     return mapSourceGroundedEvidence(input, sourceInventory, sourceChunks);
   }
 
+  return buildPlaceholderEvidence(input);
+}
+
+export function buildPlaceholderEvidence(input: RunInput): EvidenceArtifact {
   const profile = getScopeProfile(input);
 
   return {

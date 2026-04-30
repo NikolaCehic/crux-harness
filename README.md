@@ -121,3 +121,14 @@ The deterministic generator is scope-aware for benchmark coverage. It currently 
 Crux v0.2 adds source-grounded evidence mode for source-pack scenarios. The strategic technology benchmark now ingests `sources/strategic-tech`, writes `source_inventory.json`, and requires source-backed evidence instead of placeholder evidence.
 
 Crux v0.3 adds source chunking and provenance verification. Source-pack runs now write `source_chunks.json`, evidence items cite stable chunk IDs like `S1#chunk-001`, and integrity checks reject forged excerpts that do not appear in cited source chunks.
+
+Crux v0.4 adds an optional LLM evidence mapper behind the same provenance boundary. Deterministic mapping remains the default. To opt in manually, set:
+
+```bash
+CRUX_EVIDENCE_MAPPER=llm
+CRUX_LLM_PROVIDER=openai-compatible
+CRUX_LLM_API_KEY=...
+CRUX_LLM_MODEL=...
+```
+
+LLM output is accepted only if it parses as strict JSON and passes schema plus provenance checks.

@@ -5,13 +5,16 @@ import {
   buildContradictions,
   buildDecisionMemo,
   buildEvidence,
+  buildPlaceholderEvidence,
   buildQuestionSpec,
   buildRedTeam,
   buildUncertainty
 } from "./artifacts.js";
+import { mapEvidenceWithLlm, selectEvidenceMapper } from "./evidence-mapper.js";
 import { evaluateRun } from "./evaluator.js";
 import { artifactPath, copyIntoRun, ensureDir, updateLatestSymlink, writeJson, writeText } from "./fs.js";
 import { loadInput, slugFromInput } from "./input.js";
+import { createConfiguredLlmClient } from "./llm.js";
 import { buildSourceChunks, buildSourceInventory } from "./sources.js";
 import { trace } from "./trace.js";
 import type { RunContext, SourceChunksArtifact, SourceInventory } from "./types.js";
@@ -79,7 +82,42 @@ export async function runHarness(projectRoot: string, inputPath: string): Promis
     });
 
     await runStage(context, "gather_evidence", ["claims.json", "source_inventory.json", "source_chunks.json"], ["evidence.json"], async () => {
-      const artifact = buildEvidence(input, sourceInventory, sourceChunks);
+      const claims = buildClaims(input);
+      const mapperSelection = selectEvidenceMapper({ env: process.env });
+      const llm = createConfiguredLlmClient();
+      const useLlmEvidenceMapper = mapperSelection.type === "llm" && llm && sourceInventory.sources.length > 0;
+      const mapperReason = mapperSelection.type === "llm" && !llm
+        ? "LLM client unavailable; used deterministic fallback."
+        : mapperSelection.type === "llm" && sourceInventory.sources.length === 0
+          ? "LLM evidence mapper requires source inventory; used placeholder evidence."
+          : mapperSelection.reason;
+      const artifact = useLlmEvidenceMapper
+        ? await mapEvidenceWithLlm({
+            input,
+            claims,
+            sourceInventory,
+            sourceChunks,
+            llm,
+            projectRoot
+          })
+        : sourceInventory.sources.length > 0
+          ? buildEvidence(input, sourceInventory, sourceChunks)
+          : buildPlaceholderEvidence(input);
+
+      await trace(runDir, {
+        stage: "gather_evidence",
+        event_type: "info",
+        message: "Selected evidence mapper",
+        input_artifacts: ["claims.json", "source_inventory.json", "source_chunks.json"],
+        output_artifacts: ["evidence.json"],
+        metadata: {
+          mapper_type: useLlmEvidenceMapper ? "llm" : "deterministic",
+          mapper_reason: mapperReason,
+          source_count: sourceInventory.sources.length,
+          chunk_count: sourceChunks.chunks.length,
+          evidence_count: artifact.evidence.length
+        }
+      });
       await validateOrThrow(validator, schemaIds.evidence, artifact);
       await writeJson(artifactPath(runDir, "evidence.json"), artifact);
     });
