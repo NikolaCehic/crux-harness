@@ -1,0 +1,27 @@
+services:
+  crux:
+    build:
+      context: .
+    command: ["node", "dist/src/cli.js", "api", "--host", "0.0.0.0", "--port", "4317"]
+    ports:
+      - "4317:4317"
+    environment:
+      CRUX_API_HOST: "0.0.0.0"
+      CRUX_API_PORT: "4317"
+      CRUX_CLAIM_DECOMPOSER: "${CRUX_CLAIM_DECOMPOSER:-deterministic}"
+      CRUX_EVIDENCE_MAPPER: "${CRUX_EVIDENCE_MAPPER:-deterministic}"
+      CRUX_LLM_PROVIDER: "${CRUX_LLM_PROVIDER:-}"
+      CRUX_LLM_MODEL: "${CRUX_LLM_MODEL:-gpt-4.1-mini}"
+      CRUX_LLM_API_KEY: "${CRUX_LLM_API_KEY:-}"
+    volumes:
+      - crux_runs:/app/runs
+      - crux_test_results:/app/test-results
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4317/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  crux_runs:
+  crux_test_results:

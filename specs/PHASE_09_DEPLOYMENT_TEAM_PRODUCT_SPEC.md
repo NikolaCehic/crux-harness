@@ -1,5 +1,7 @@
 # Phase 9 Spec: Deployment And Team Product
 
+Status: started. First implementation slice adds self-hosted Docker Compose deployment for the local API plus secret-safe deployment config reporting.
+
 ## Purpose
 
 Make Crux usable by teams in production-like environments.

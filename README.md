@@ -120,6 +120,12 @@ Start the local API server:
 npm run crux -- api --host 127.0.0.1 --port 4317
 ```
 
+Run the local API through Docker Compose:
+
+```bash
+docker compose up --build
+```
+
 Compare two runs:
 
 ```bash
@@ -166,7 +172,7 @@ npm run crux -- benchmark --regression-threshold 0.05
 
 ## Current Implementation
 
-Crux v1.7 is a product-grade local harness for auditable, source-grounded analysis-agent runs. It remains deterministic by default, with optional LLM mappers behind strict schemas and provenance checks.
+Crux v1.9 is a product-grade local harness for auditable, source-grounded analysis-agent runs. It remains deterministic by default, with optional LLM mappers behind strict schemas and provenance checks.
 
 Every run writes `run_config.json`, which locks the harness version, input hash, source policy, budgets, mapper selection, and prompt versions.
 
@@ -195,6 +201,8 @@ Human review is captured in `review.json` as a sidecar artifact. Reviewers can a
 Vertical packs live under `packs/<pack-name>/pack.json`. Packs define source requirements, claim taxonomies, expected evidence, known failure modes, eval rubrics, memo sections, and benchmark links without hard-coding domains into the core harness.
 
 External systems can call Crux through the local API server or the TypeScript `CruxLocalSdk`. The first API slice supports creating runs, fetching JSON/text artifacts, and fetching eval reports from the same contracts used by the CLI.
+
+Self-hosted deployment starts with Docker Compose. The container runs the local API, stores generated runs in a Docker volume, and keeps provider secrets in environment variables instead of materializing secret values into configuration output.
 
 Crux includes optional LLM claim and evidence mappers behind the same validation boundary. Deterministic mapping remains the default. To opt in manually, set:
 

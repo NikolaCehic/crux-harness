@@ -1,6 +1,6 @@
 {
   "name": "crux-harness",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "Spec-driven harness for decision-grade analysis agents.",
   "type": "module",
   "bin": {

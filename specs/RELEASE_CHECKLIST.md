@@ -13,6 +13,7 @@ Use this checklist before tagging a Crux release.
 - `npm run crux -- review init runs/latest`
 - `npm run crux -- packs list`
 - API tests pass through `npm test`.
+- Deployment manifest tests pass through `npm test`.
 - Verify `runs/latest/run_config.json` has the intended harness version.
 - Verify benchmark report has `7/7` scenarios passing and `0` regressions.
 

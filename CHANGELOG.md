@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.9.0 - 2026-04-30
+
+- Added Dockerfile, `.dockerignore`, and `docker-compose.yml` for self-hosted local API deployment.
+- Added deployment docs for running the API, health checks, secrets, and state volumes.
+- Added secret-safe deployment config reporting for API and model provider settings.
+- Added tests for deployment config, Docker command shape, compose environment, and ignored local state.
+
 ## 1.8.0 - 2026-04-30
 
 - Added a dependency-free local HTTP API server.
