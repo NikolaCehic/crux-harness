@@ -22,6 +22,39 @@ export type RunInput = {
   user_prior?: string;
 };
 
+export type RunConfig = {
+  schema_version: "crux.run_config.v1";
+  harness_version: string;
+  run_id: string;
+  created_at: string;
+  input: {
+    path: string;
+    copied_path: string;
+    content_hash: string;
+  };
+  source_policy: string;
+  source_pack: string | null;
+  budgets: {
+    max_research_items: number | null;
+    max_agent_steps: number | null;
+    max_llm_calls: number | null;
+  };
+  mappers: {
+    claim_decomposer: {
+      type: "deterministic" | "llm";
+      reason: string;
+    };
+    evidence_mapper: {
+      type: "deterministic" | "llm";
+      reason: string;
+    };
+  };
+  prompts: {
+    claim_decomposer: string;
+    evidence_mapper: string;
+  };
+};
+
 export type QuestionSpec = {
   question: string;
   decision_type: string;
@@ -155,12 +188,15 @@ export type UncertaintyArtifact = {
 export type EvalReport = {
   scores: {
     schema_validity: number;
+    claim_graph_integrity: number;
     claim_coverage: number;
     evidence_traceability: number;
     source_quality: number;
     contradiction_handling: number;
     red_team_strength: number;
     uncertainty_quality: number;
+    faithfulness: number;
+    crux_quality: number;
     decision_usefulness: number;
   };
   findings: string[];

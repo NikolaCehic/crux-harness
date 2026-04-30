@@ -9,22 +9,28 @@
       "type": "object",
       "required": [
         "schema_validity",
+        "claim_graph_integrity",
         "claim_coverage",
         "evidence_traceability",
         "source_quality",
         "contradiction_handling",
         "red_team_strength",
         "uncertainty_quality",
+        "faithfulness",
+        "crux_quality",
         "decision_usefulness"
       ],
       "properties": {
         "schema_validity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "claim_graph_integrity": { "type": "number", "minimum": 0, "maximum": 1 },
         "claim_coverage": { "type": "number", "minimum": 0, "maximum": 1 },
         "evidence_traceability": { "type": "number", "minimum": 0, "maximum": 1 },
         "source_quality": { "type": "number", "minimum": 0, "maximum": 1 },
         "contradiction_handling": { "type": "number", "minimum": 0, "maximum": 1 },
         "red_team_strength": { "type": "number", "minimum": 0, "maximum": 1 },
         "uncertainty_quality": { "type": "number", "minimum": 0, "maximum": 1 },
+        "faithfulness": { "type": "number", "minimum": 0, "maximum": 1 },
+        "crux_quality": { "type": "number", "minimum": 0, "maximum": 1 },
         "decision_usefulness": { "type": "number", "minimum": 0, "maximum": 1 }
       },
       "additionalProperties": false
@@ -44,4 +50,3 @@
   },
   "additionalProperties": false
 }
-

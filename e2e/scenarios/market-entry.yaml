@@ -10,5 +10,5 @@ known_constraints:
   - "The company has strong underwriting technology but limited US regulatory experience."
   - "Capital partnerships would be required."
 source_policy: "offline"
+source_pack: "sources/market-entry"
 user_prior: "The market is large, but regulation, credit risk, and distribution may dominate."
-

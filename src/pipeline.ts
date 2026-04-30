@@ -1,7 +1,6 @@
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import {
-  buildClaims,
   buildContradictions,
   buildDecisionMemo,
   buildEvidence,
@@ -10,14 +9,16 @@ import {
   buildRedTeam,
   buildUncertainty
 } from "./artifacts.js";
+import { buildDeterministicClaims, decomposeClaimsWithLlm, selectClaimDecomposer } from "./claim-decomposer.js";
 import { mapEvidenceWithLlm, selectEvidenceMapper } from "./evidence-mapper.js";
 import { evaluateRun } from "./evaluator.js";
 import { artifactPath, copyIntoRun, ensureDir, updateLatestSymlink, writeJson, writeText } from "./fs.js";
 import { loadInput, slugFromInput } from "./input.js";
 import { createConfiguredLlmClient } from "./llm.js";
+import { buildRunConfig } from "./run-config.js";
 import { buildSourceChunks, buildSourceInventory } from "./sources.js";
 import { trace } from "./trace.js";
-import type { RunContext, SourceChunksArtifact, SourceInventory } from "./types.js";
+import type { ClaimsArtifact, RunContext, SourceChunksArtifact, SourceInventory } from "./types.js";
 import { ArtifactValidator, schemaIds } from "./validator.js";
 
 export type RunResult = {
@@ -34,8 +35,21 @@ export async function runHarness(projectRoot: string, inputPath: string): Promis
   const validator = new ArtifactValidator(path.join(projectRoot, "schemas"));
 
   await ensureDir(runDir);
-  await copyIntoRun(absoluteInputPath, runDir);
+  const copiedInputPath = await copyIntoRun(absoluteInputPath, runDir);
   await writeText(path.join(runDir, "trace.jsonl"), "");
+  const claimDecomposerSelection = selectClaimDecomposer({ env: process.env });
+  const evidenceMapperSelection = selectEvidenceMapper({ env: process.env });
+  const runConfig = await buildRunConfig({
+    projectRoot,
+    runId,
+    inputPath: absoluteInputPath,
+    copiedInputPath,
+    input,
+    claimDecomposer: claimDecomposerSelection,
+    evidenceMapper: evidenceMapperSelection
+  });
+  await validateOrThrow(validator, schemaIds.runConfig, runConfig);
+  await writeJson(artifactPath(runDir, "run_config.json"), runConfig);
 
   const context: RunContext = {
     projectRoot,
@@ -66,6 +80,9 @@ export async function runHarness(projectRoot: string, inputPath: string): Promis
       },
       chunks: []
     };
+    let claimsArtifact: ClaimsArtifact = buildDeterministicClaims(input);
+    const llm = createConfiguredLlmClient();
+
     await runStage(context, "ingest_sources", ["input.yaml"], ["source_inventory.json", "source_chunks.json"], async () => {
       sourceInventory = await buildSourceInventory(projectRoot, input);
       sourceChunks = await buildSourceChunks(projectRoot, sourceInventory);
@@ -76,15 +93,30 @@ export async function runHarness(projectRoot: string, inputPath: string): Promis
     });
 
     await runStage(context, "build_claim_graph", ["question_spec.json", "source_inventory.json", "source_chunks.json"], ["claims.json"], async () => {
-      const artifact = buildClaims(input);
-      await validateOrThrow(validator, schemaIds.claims, artifact);
-      await writeJson(artifactPath(runDir, "claims.json"), artifact);
+      const useLlmClaimDecomposer = runConfig.mappers.claim_decomposer.type === "llm" && llm;
+      claimsArtifact = useLlmClaimDecomposer
+        ? await decomposeClaimsWithLlm({ input, llm, projectRoot })
+        : buildDeterministicClaims(input);
+
+      await trace(runDir, {
+        stage: "build_claim_graph",
+        event_type: "info",
+        message: "Selected claim decomposer",
+        input_artifacts: ["question_spec.json", "source_inventory.json", "source_chunks.json"],
+        output_artifacts: ["claims.json"],
+        metadata: {
+          mapper_type: useLlmClaimDecomposer ? "llm" : "deterministic",
+          mapper_reason: runConfig.mappers.claim_decomposer.reason,
+          claim_count: claimsArtifact.claims.length,
+          edge_count: claimsArtifact.edges.length
+        }
+      });
+      await validateOrThrow(validator, schemaIds.claims, claimsArtifact);
+      await writeJson(artifactPath(runDir, "claims.json"), claimsArtifact);
     });
 
     await runStage(context, "gather_evidence", ["claims.json", "source_inventory.json", "source_chunks.json"], ["evidence.json"], async () => {
-      const claims = buildClaims(input);
-      const mapperSelection = selectEvidenceMapper({ env: process.env });
-      const llm = createConfiguredLlmClient();
+      const mapperSelection = runConfig.mappers.evidence_mapper;
       const useLlmEvidenceMapper = mapperSelection.type === "llm" && llm && sourceInventory.sources.length > 0;
       const mapperReason = mapperSelection.type === "llm" && !llm
         ? "LLM client unavailable; used deterministic fallback."
@@ -94,7 +126,7 @@ export async function runHarness(projectRoot: string, inputPath: string): Promis
       const artifact = useLlmEvidenceMapper
         ? await mapEvidenceWithLlm({
             input,
-            claims,
+            claims: claimsArtifact,
             sourceInventory,
             sourceChunks,
             llm,
@@ -142,7 +174,7 @@ export async function runHarness(projectRoot: string, inputPath: string): Promis
       await writeText(artifactPath(runDir, "decision_memo.md"), buildDecisionMemo(input));
     });
 
-    await runStage(context, "evaluate", ["question_spec.json", "source_inventory.json", "source_chunks.json", "claims.json", "evidence.json", "contradictions.json", "red_team.md", "uncertainty.json", "decision_memo.md"], ["eval_report.json"], async () => {
+    await runStage(context, "evaluate", ["run_config.json", "question_spec.json", "source_inventory.json", "source_chunks.json", "claims.json", "evidence.json", "contradictions.json", "red_team.md", "uncertainty.json", "decision_memo.md"], ["eval_report.json"], async () => {
       const artifact = await evaluateRun(projectRoot, runDir);
       await validateOrThrow(validator, schemaIds.evalReport, artifact);
       await writeJson(artifactPath(runDir, "eval_report.json"), artifact);

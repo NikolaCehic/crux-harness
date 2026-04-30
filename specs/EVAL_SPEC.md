@@ -65,6 +65,10 @@ Whether all artifacts satisfy required schemas.
 
 Whether the claim graph covers the major reasoning required by the question.
 
+### claim_graph_integrity
+
+Whether the claim graph avoids duplicate IDs, missing roots, missing dependencies, self-dependencies, and dependency cycles.
+
 ### evidence_traceability
 
 Whether important claims link to evidence or are explicitly marked unsupported.
@@ -85,6 +89,14 @@ Whether the opposing case is strong enough to potentially change the recommendat
 
 Whether uncertainties are specific, decision-relevant, and connected to tests.
 
+### faithfulness
+
+Whether the final memo maps back to `claims.json`, avoids unsupported certainty, and preserves source/evidence caveats.
+
+### crux_quality
+
+Whether the run exposes the crux of the decision through high-severity contradictions, what-would-change-my-mind entries, and decision-relevant next tests.
+
 ### decision_usefulness
 
 Whether the final memo helps a user make or defer a decision.
@@ -95,12 +107,15 @@ Whether the final memo helps a user make or defer a decision.
 {
   "scores": {
     "schema_validity": 1.0,
+    "claim_graph_integrity": 0.0,
     "claim_coverage": 0.0,
     "evidence_traceability": 0.0,
     "source_quality": 0.0,
     "contradiction_handling": 0.0,
     "red_team_strength": 0.0,
     "uncertainty_quality": 0.0,
+    "faithfulness": 0.0,
+    "crux_quality": 0.0,
     "decision_usefulness": 0.0
   },
   "findings": [],
@@ -135,4 +150,3 @@ Each benchmark should define:
 - expected artifact qualities
 - known traps
 - evaluation notes
-

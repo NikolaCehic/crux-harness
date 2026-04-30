@@ -18,6 +18,7 @@ Required files:
 
 ```text
 input.yaml
+run_config.json
 question_spec.json
 source_inventory.json
 source_chunks.json
@@ -52,6 +53,25 @@ Optional fields:
 - `tool_budget`
 - `model_budget`
 - `user_prior`
+
+## run_config.json
+
+Run configuration lockfile.
+
+Required fields:
+
+- `schema_version`
+- `harness_version`
+- `run_id`
+- `created_at`
+- `input`
+- `source_policy`
+- `source_pack`
+- `budgets`
+- `mappers`
+- `prompts`
+
+The config records the copied input hash, mapper selections, source policy, budget limits, and prompt versions used by the run.
 
 ## question_spec.json
 
@@ -279,12 +299,15 @@ Required fields:
 Required score dimensions:
 
 - `schema_validity`
+- `claim_graph_integrity`
 - `claim_coverage`
 - `evidence_traceability`
 - `source_quality`
 - `contradiction_handling`
 - `red_team_strength`
 - `uncertainty_quality`
+- `faithfulness`
+- `crux_quality`
 - `decision_usefulness`
 
 ## trace.jsonl

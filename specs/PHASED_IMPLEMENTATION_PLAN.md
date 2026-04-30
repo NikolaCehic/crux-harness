@@ -68,6 +68,8 @@ Acceptance:
 
 ## Phase 3: v0.5 Claim Decomposer
 
+Status: implemented in v1.0.
+
 Optimality hypothesis: Claim generation should come after evidence mapping because generated claims without grounded evidence would increase fluency before trustworthiness.
 
 Scope:
@@ -86,6 +88,8 @@ Acceptance:
 
 ## Phase 4: v0.6 Faithfulness Evaluator
 
+Status: implemented in v1.0.
+
 Optimality hypothesis: Once claims and evidence are generated, the next highest-risk surface is the final memo inventing unsupported conclusions.
 
 Scope:
@@ -103,6 +107,8 @@ Acceptance:
 
 ## Phase 5: v0.7 Source Packs For All Benchmarks
 
+Status: implemented in v1.0.
+
 Optimality hypothesis: Broadening source-grounded mode should happen only after the source mapper and verifier are proven on one benchmark.
 
 Scope:
@@ -119,6 +125,8 @@ Acceptance:
 - Benchmark protects scenario-specific source-quality baselines.
 
 ## Phase 6: v0.8 Replayable Web Research Mode
+
+Status: deferred beyond v1.0.
 
 Optimality hypothesis: Live research should come only after local source packs prove provenance and replay semantics.
 
@@ -139,6 +147,8 @@ Acceptance:
 
 ## Phase 7: v0.9 Decision Quality Evals
 
+Status: implemented in v1.0 as crux-quality and benchmark-gated eval dimensions.
+
 Optimality hypothesis: Quality evals become most valuable once artifacts are generated from real sources and can be judged beyond structure.
 
 Scope:
@@ -156,6 +166,8 @@ Acceptance:
 - Reports show quality dimensions that improved or regressed.
 
 ## Phase 8: v1.0 Product-Grade Harness
+
+Status: implemented.
 
 Optimality hypothesis: Packaging comes after the core reasoning loop is real enough to be worth stabilizing for outside users.
 

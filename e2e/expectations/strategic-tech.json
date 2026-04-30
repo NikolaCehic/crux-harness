@@ -13,9 +13,12 @@
   "requires_verified_excerpts": true,
   "min_scores": {
     "schema_validity": 1,
+    "claim_graph_integrity": 1,
     "claim_coverage": 0.75,
     "evidence_traceability": 0.75,
     "source_quality": 0.8,
+    "faithfulness": 1,
+    "crux_quality": 0.9,
     "decision_usefulness": 0.75
   }
 }

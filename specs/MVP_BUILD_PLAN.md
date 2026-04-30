@@ -126,6 +126,8 @@ Allow model-assisted evidence mapping without letting model output bypass schema
 
 ## Milestone 4: Web Research Mode
 
+Status: deferred beyond v1.0.
+
 Deliverables:
 
 - source policy enforcement
@@ -140,6 +142,8 @@ Enable live analysis while preserving auditability.
 
 ## Milestone 5: Golden Tests
 
+Status: implemented as a seven-scenario v1 benchmark suite.
+
 Deliverables:
 
 - 10 benchmark inputs
@@ -150,6 +154,25 @@ Deliverables:
 Purpose:
 
 Make progress measurable.
+
+## Milestone 6: Product-Grade v1 Harness
+
+Status: implemented.
+
+Deliverables:
+
+- `run_config.json` lockfile
+- optional LLM claim decomposer selection
+- source packs for every benchmark scenario
+- generic source-grounded evidence mapper
+- enhanced evaluator scores for claim graph integrity, faithfulness, and crux quality
+- `crux inspect <run>`
+- CI workflow
+- changelog and release checklist
+
+Purpose:
+
+Make Crux usable by a new local user without guidance while keeping the reasoning contract regression-protected.
 
 ## Recommended First Vertical Slice
 

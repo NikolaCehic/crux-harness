@@ -10,5 +10,5 @@ known_constraints:
   - "Engineering capacity is fixed."
   - "Retention and expansion matter more than press attention."
 source_policy: "offline"
+source_pack: "sources/product-strategy"
 user_prior: "AI copilots may help positioning, but workflow automation may create more durable value."
-

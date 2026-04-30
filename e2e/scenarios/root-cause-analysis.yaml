@@ -10,5 +10,5 @@ known_constraints:
   - "A redesign shipped two weeks before the activation decline."
   - "The team has event analytics, session recordings, and support tickets available."
 source_policy: "offline"
+source_pack: "sources/root-cause-analysis"
 user_prior: "The redesign is suspicious, but instrumentation or traffic-mix changes could also explain the drop."
-

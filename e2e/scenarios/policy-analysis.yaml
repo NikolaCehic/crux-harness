@@ -10,5 +10,5 @@ known_constraints:
   - "Budget is limited and competing housing interventions exist."
   - "Political feasibility and implementation speed matter."
 source_policy: "offline"
+source_pack: "sources/policy-analysis"
 user_prior: "Conversions sound promising, but economics and zoning may limit housing impact."
-

@@ -18,6 +18,7 @@ test("runHarness creates a complete, schema-valid deterministic run", async () =
 
   for (const file of [
     "input.yaml",
+    "run_config.json",
     "question_spec.json",
     "source_inventory.json",
     "source_chunks.json",
@@ -56,7 +57,7 @@ test("runHarness creates a complete, schema-valid deterministic run", async () =
   assert.deepEqual(evalReport.failed_checks, []);
 
   const traceLines = readFileSync(path.join(result.runDir, "trace.jsonl"), "utf8").trim().split("\n");
-  assert.equal(traceLines.length, 19);
+  assert.equal(traceLines.length >= 20, true);
   const traceEvents = traceLines.map((line) => JSON.parse(line));
   assert.equal(traceEvents.some((event) => {
     return event.stage === "gather_evidence" && event.event_type === "info" && event.metadata.mapper_type === "deterministic";

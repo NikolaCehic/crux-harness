@@ -2,6 +2,7 @@
 import path from "node:path";
 import { Command } from "commander";
 import { runBenchmark, writeBenchmarkReport } from "./benchmark.js";
+import { inspectRun } from "./inspect.js";
 import { replayRun, rerunEvaluation, runHarness } from "./pipeline.js";
 
 const program = new Command();
@@ -9,12 +10,12 @@ const program = new Command();
 program
   .name("crux")
   .description("Spec-driven harness for decision-grade analysis agents.")
-  .version("0.1.0");
+  .version("1.0.0");
 
 program
   .command("run")
   .argument("<input>", "Path to an input YAML file")
-  .description("Run the deterministic Crux v0.1 pipeline")
+  .description("Run the Crux v1 pipeline")
   .action(async (input: string) => {
     const result = await runHarness(process.cwd(), input);
     console.log(`Run complete: ${path.relative(process.cwd(), result.runDir)}`);
@@ -58,6 +59,14 @@ program
     if (!report.passed) {
       process.exitCode = 1;
     }
+  });
+
+program
+  .command("inspect")
+  .argument("<runDir>", "Path to a run directory")
+  .description("Print a compact summary of a Crux run")
+  .action(async (runDir: string) => {
+    console.log(await inspectRun(process.cwd(), runDir));
   });
 
 program

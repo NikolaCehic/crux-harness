@@ -10,5 +10,5 @@ known_constraints:
   - "The team serves enterprise users who require freshness, citations, and access control."
   - "Long-context models are improving quickly."
 source_policy: "offline"
+source_pack: "sources/scientific-thesis"
 user_prior: "Long context reduces some retrieval needs, but may not remove the need for grounded retrieval systems."
-

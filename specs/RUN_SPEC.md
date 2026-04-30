@@ -13,12 +13,13 @@ The harness must make runs:
 
 ## CLI Target
 
-The intended v0.1 interface:
+The v1 interface:
 
 ```bash
 crux run examples/frontier-agent-platform.yaml
 crux eval runs/<run_id>
 crux replay runs/<run_id>
+crux inspect runs/<run_id>
 ```
 
 ## Run Lifecycle
@@ -33,6 +34,7 @@ Outputs:
 
 - run directory
 - copied `input.yaml`
+- `run_config.json`
 - initial `trace.jsonl`
 
 ### 2. Normalize Question
@@ -204,6 +206,9 @@ Responsibilities:
 
 - validate schemas
 - score artifact quality
+- score claim graph integrity
+- score memo faithfulness
+- score crux quality
 - identify reasoning gaps
 - recommend improvements
 
@@ -230,6 +235,8 @@ The default for early development is `offline` or curated examples, so harness b
 Offline source-pack mode is the first supported grounding mechanism. Inputs may point at a local `source_pack`, and the harness writes `source_inventory.json` before evidence generation.
 
 Source-pack runs also write `source_chunks.json`. Evidence can cite source chunks with IDs like `S1#chunk-001`, and provenance checks verify that evidence excerpts appear in the cited chunks.
+
+Crux v1 requires source packs for every committed benchmark scenario. Live web research remains a post-v1 integration point; v1 prioritizes replayable local source packs.
 
 ## Replay Policy
 

@@ -59,6 +59,7 @@ export function buildQuestionSpec(input: RunInput): QuestionSpec {
       `Whether ${profile.externalPressure.toLowerCase()} within the time horizon.`
     ],
     required_artifacts: [
+      "run_config.json",
       "source_inventory.json",
       "source_chunks.json",
       "claims.json",
@@ -316,12 +317,15 @@ export function buildInitialEvalReport(): EvalReport {
   return {
     scores: {
       schema_validity: 1,
+      claim_graph_integrity: 1,
       claim_coverage: 0.82,
       evidence_traceability: 0.76,
       source_quality: 0.42,
       contradiction_handling: 0.8,
       red_team_strength: 0.78,
       uncertainty_quality: 0.84,
+      faithfulness: 0.8,
+      crux_quality: 0.78,
       decision_usefulness: 0.86
     },
     findings: [

@@ -31,6 +31,9 @@ test("benchmark runner passes all scoped scenarios", async () => {
     report.results.map((result) => [result.scenario, result.passed, result.failures]),
     report.results.map((result) => [result.scenario, true, []])
   );
+  assert.equal(report.results.every((result) => result.artifact_counts.sources >= 3), true);
+  assert.equal(report.results.every((result) => result.artifact_counts.source_backed_evidence >= 7), true);
+  assert.equal(report.results.every((result) => result.artifact_counts.verified_excerpts >= 7), true);
 });
 
 test("benchmark runner compares against the committed baseline", async () => {
@@ -115,6 +118,12 @@ test("compiled CLI lifecycle supports run, eval, and replay", async () => {
   const runMatch = run.stdout.match(/Run complete: (.+)/);
   assert.ok(runMatch, "run command should print the run directory");
   const runDir = runMatch[1].trim();
+
+  const inspection = await execFileAsync(process.execPath, [cliPath, "inspect", runDir], { cwd: projectRoot, env: deterministicEnv });
+  assert.match(inspection.stdout, /Crux Run:/);
+  assert.match(inspection.stdout, /Scenario: product-strategy/);
+  assert.match(inspection.stdout, /Integrity: pass/);
+  assert.match(inspection.stdout, /faithfulness:/);
 
   const evaluation = await execFileAsync(process.execPath, [cliPath, "eval", runDir], { cwd: projectRoot, env: deterministicEnv });
   assert.match(evaluation.stdout, /Eval complete:/);

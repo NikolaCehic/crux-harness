@@ -37,7 +37,7 @@ Examples:
 
 ## Initial Wedge
 
-Crux v0.1 focuses on strategic technology decisions.
+Crux v1 focuses on high-stakes analytical decisions that benefit from explicit claims, source-backed evidence, uncertainty, and replayable evaluation.
 
 Example questions:
 
@@ -46,6 +46,8 @@ Example questions:
 - Which assumption most threatens this roadmap?
 - What evidence would make this strategy fail?
 - Should this organization invest in a given technical direction?
+
+The committed benchmark suite covers strategic technology, investment diligence, policy analysis, product strategy, scientific thesis evaluation, market entry, and root-cause analysis.
 
 ## Non-Goals
 
@@ -98,4 +100,3 @@ Runs should be inspectable, comparable, and reproducible enough to support itera
 ## North Star
 
 Crux becomes the reasoning infrastructure layer for high-stakes analysis agents.
-

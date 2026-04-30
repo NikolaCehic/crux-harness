@@ -7,6 +7,7 @@ import type {
   EvalReport,
   EvidenceArtifact,
   QuestionSpec,
+  RunConfig,
   SourceChunksArtifact,
   SourceInventory,
   TraceEvent,
@@ -21,6 +22,7 @@ export type IntegrityReport = {
 
 const requiredFiles = [
   "input.yaml",
+  "run_config.json",
   "question_spec.json",
   "source_inventory.json",
   "source_chunks.json",
@@ -57,6 +59,7 @@ export async function validateRunIntegrity(projectRoot: string, runDir: string):
   }
 
   const validator = new ArtifactValidator(path.join(projectRoot, "schemas"));
+  const runConfig = await readJson<RunConfig>(absoluteRunDir, "run_config.json", failures);
   const questionSpec = await readJson<QuestionSpec>(absoluteRunDir, "question_spec.json", failures);
   const sourceInventory = await readJson<SourceInventory>(absoluteRunDir, "source_inventory.json", failures);
   const sourceChunks = await readJson<SourceChunksArtifact>(absoluteRunDir, "source_chunks.json", failures);
@@ -69,6 +72,7 @@ export async function validateRunIntegrity(projectRoot: string, runDir: string):
   const decisionMemo = await readText(absoluteRunDir, "decision_memo.md", failures);
   const traceLines = await readTrace(absoluteRunDir, failures);
 
+  await validateSchema(validator, schemaIds.runConfig, "run_config.json", runConfig, failures);
   await validateSchema(validator, schemaIds.questionSpec, "question_spec.json", questionSpec, failures);
   await validateSchema(validator, schemaIds.sourceInventory, "source_inventory.json", sourceInventory, failures);
   await validateSchema(validator, schemaIds.sourceChunks, "source_chunks.json", sourceChunks, failures);
@@ -225,6 +229,7 @@ function validateClaimEvidenceGraph(
 ): void {
   const claimIds = new Set(claimsArtifact.claims.map((claim) => claim.id));
   const evidenceIds = new Set(evidenceArtifact.evidence.map((item) => item.id));
+  const dependencyMap = new Map(claimsArtifact.claims.map((claim) => [claim.id, claim.depends_on]));
 
   if (claimIds.size !== claimsArtifact.claims.length) {
     failures.push("claims.json contains duplicate claim IDs.");
@@ -239,6 +244,9 @@ function validateClaimEvidenceGraph(
   }
 
   for (const claim of claimsArtifact.claims) {
+    if (claim.depends_on.includes(claim.id)) {
+      failures.push(`Claim ${claim.id} depends on itself.`);
+    }
     for (const dependency of claim.depends_on) {
       assertKnown(dependency, claimIds, `Claim ${claim.id} depends on unknown claim ${dependency}.`, failures);
     }
@@ -246,6 +254,8 @@ function validateClaimEvidenceGraph(
       assertKnown(evidenceId, evidenceIds, `Claim ${claim.id} references unknown evidence ${evidenceId}.`, failures);
     }
   }
+
+  validateDependencyCycles(claimIds, dependencyMap, failures);
 
   for (const edge of claimsArtifact.edges) {
     assertKnown(edge.from, claimIds, `Edge references unknown from claim ${edge.from}.`, failures);
@@ -266,6 +276,40 @@ function validateClaimEvidenceGraph(
 
   for (const claimId of contradictionsArtifact.unsupported_critical_claims) {
     assertKnown(claimId, claimIds, `Unsupported critical claim references unknown claim ${claimId}.`, failures);
+  }
+}
+
+function validateDependencyCycles(claimIds: Set<string>, dependencyMap: Map<string, string[]>, failures: string[]): void {
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const cycles = new Set<string>();
+
+  const visit = (claimId: string, trail: string[]): void => {
+    if (visiting.has(claimId)) {
+      const cycle = [...trail, claimId].join(" -> ");
+      cycles.add(cycle);
+      return;
+    }
+    if (visited.has(claimId)) {
+      return;
+    }
+
+    visiting.add(claimId);
+    for (const dependency of dependencyMap.get(claimId) ?? []) {
+      if (claimIds.has(dependency)) {
+        visit(dependency, [...trail, claimId]);
+      }
+    }
+    visiting.delete(claimId);
+    visited.add(claimId);
+  };
+
+  for (const claimId of claimIds) {
+    visit(claimId, []);
+  }
+
+  for (const cycle of cycles) {
+    failures.push(`Claim graph contains dependency cycle: ${cycle}.`);
   }
 }
 

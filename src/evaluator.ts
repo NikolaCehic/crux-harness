@@ -6,6 +6,7 @@ import type {
   EvalReport,
   EvidenceArtifact,
   QuestionSpec,
+  RunConfig,
   SourceChunksArtifact,
   SourceInventory,
   UncertaintyArtifact
@@ -13,6 +14,7 @@ import type {
 import { ArtifactValidator, schemaIds } from "./validator.js";
 
 type LoadedRun = {
+  runConfig?: RunConfig;
   questionSpec?: QuestionSpec;
   sourceInventory?: SourceInventory;
   sourceChunks?: SourceChunksArtifact;
@@ -29,10 +31,13 @@ export async function evaluateRun(projectRoot: string, runDir: string): Promise<
   const validator = new ArtifactValidator(path.join(projectRoot, "schemas"));
   const loaded = await loadRun(runDir);
   const validationFailures = await validateLoadedRun(validator, loaded);
-  const failedChecks = [...loaded.failedChecks, ...validationFailures];
+  const claimGraphFailures = findClaimGraphFailures(loaded.claims, loaded.evidence, loaded.contradictions);
+  const faithfulness = analyzeFaithfulness(loaded);
+  const failedChecks = [...loaded.failedChecks, ...validationFailures, ...claimGraphFailures, ...faithfulness.failures];
 
   const scores = {
     schema_validity: validationFailures.length === 0 && loaded.failedChecks.length === 0 ? 1 : 0,
+    claim_graph_integrity: claimGraphFailures.length === 0 ? 1 : 0,
     claim_coverage: scoreClaimCoverage(loaded.claims),
     evidence_traceability: scoreEvidenceTraceability(loaded.claims),
     source_quality: scoreSourceQuality(loaded.evidence),
@@ -45,6 +50,8 @@ export async function evaluateRun(projectRoot: string, runDir: string): Promise<
       "## Recommendation Impact"
     ]),
     uncertainty_quality: scoreUncertainty(loaded.uncertainty),
+    faithfulness: faithfulness.score,
+    crux_quality: scoreCruxQuality(loaded),
     decision_usefulness: scoreMarkdownSections(loaded.decisionMemo, [
       "## Recommendation",
       "## Executive Summary",
@@ -58,7 +65,7 @@ export async function evaluateRun(projectRoot: string, runDir: string): Promise<
     ])
   };
 
-  const findings = buildFindings(loaded, failedChecks);
+  const findings = buildFindings(loaded, failedChecks, faithfulness.findings);
   const improvement_recommendations = buildRecommendations(loaded, failedChecks);
 
   return {
@@ -72,7 +79,8 @@ export async function evaluateRun(projectRoot: string, runDir: string): Promise<
 async function loadRun(runDir: string): Promise<LoadedRun> {
   const failedChecks: string[] = [];
 
-  const [questionSpec, sourceInventory, sourceChunks, claims, evidence, contradictions, uncertainty, redTeam, decisionMemo] = await Promise.all([
+  const [runConfig, questionSpec, sourceInventory, sourceChunks, claims, evidence, contradictions, uncertainty, redTeam, decisionMemo] = await Promise.all([
+    readJson<RunConfig>(runDir, "run_config.json", failedChecks),
     readJson<QuestionSpec>(runDir, "question_spec.json", failedChecks),
     readJson<SourceInventory>(runDir, "source_inventory.json", failedChecks),
     readJson<SourceChunksArtifact>(runDir, "source_chunks.json", failedChecks),
@@ -84,7 +92,7 @@ async function loadRun(runDir: string): Promise<LoadedRun> {
     readText(runDir, "decision_memo.md", failedChecks)
   ]);
 
-  return { questionSpec, sourceInventory, sourceChunks, claims, evidence, contradictions, uncertainty, redTeam, decisionMemo, failedChecks };
+  return { runConfig, questionSpec, sourceInventory, sourceChunks, claims, evidence, contradictions, uncertainty, redTeam, decisionMemo, failedChecks };
 }
 
 async function readJson<T>(runDir: string, file: string, failedChecks: string[]): Promise<T | undefined> {
@@ -107,6 +115,7 @@ async function readText(runDir: string, file: string, failedChecks: string[]): P
 
 async function validateLoadedRun(validator: ArtifactValidator, loaded: LoadedRun): Promise<string[]> {
   const checks: Array<[string, string, unknown]> = [
+    ["run_config.json", schemaIds.runConfig, loaded.runConfig],
     ["question_spec.json", schemaIds.questionSpec, loaded.questionSpec],
     ["source_inventory.json", schemaIds.sourceInventory, loaded.sourceInventory],
     ["source_chunks.json", schemaIds.sourceChunks, loaded.sourceChunks],
@@ -140,6 +149,90 @@ function scoreClaimCoverage(claims?: ClaimsArtifact): number {
   const rootScore = Math.min(claims.root_claim_ids.length / 3, 1);
   const edgeScore = Math.min(claims.edges.length / 12, 1);
   return round((countScore + rootScore + edgeScore) / 3);
+}
+
+function findClaimGraphFailures(claims?: ClaimsArtifact, evidence?: EvidenceArtifact, contradictions?: ContradictionsArtifact): string[] {
+  if (!claims) {
+    return [];
+  }
+
+  const failures: string[] = [];
+  const claimIds = new Set(claims.claims.map((claim) => claim.id));
+  const evidenceIds = new Set((evidence?.evidence ?? []).map((item) => item.id));
+  const dependencyMap = new Map(claims.claims.map((claim) => [claim.id, claim.depends_on]));
+
+  if (claimIds.size !== claims.claims.length) {
+    failures.push("claim graph integrity: duplicate claim IDs.");
+  }
+
+  if (claims.root_claim_ids.length === 0) {
+    failures.push("claim graph integrity: at least one root claim is required.");
+  }
+
+  for (const rootId of claims.root_claim_ids) {
+    if (!claimIds.has(rootId)) {
+      failures.push(`claim graph integrity: unknown root claim ${rootId}.`);
+    }
+  }
+
+  for (const claim of claims.claims) {
+    if (claim.depends_on.includes(claim.id)) {
+      failures.push(`claim graph integrity: claim ${claim.id} depends on itself.`);
+    }
+    for (const dependency of claim.depends_on) {
+      if (!claimIds.has(dependency)) {
+        failures.push(`claim graph integrity: claim ${claim.id} depends on unknown claim ${dependency}.`);
+      }
+    }
+    for (const evidenceId of [...claim.evidence_ids, ...claim.counterevidence_ids]) {
+      if (evidence && !evidenceIds.has(evidenceId)) {
+        failures.push(`claim graph integrity: claim ${claim.id} references unknown evidence ${evidenceId}.`);
+      }
+    }
+  }
+
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const visit = (claimId: string, trail: string[]): void => {
+    if (visiting.has(claimId)) {
+      failures.push(`claim graph integrity: dependency cycle detected (${[...trail, claimId].join(" -> ")}).`);
+      return;
+    }
+    if (visited.has(claimId)) {
+      return;
+    }
+
+    visiting.add(claimId);
+    for (const dependency of dependencyMap.get(claimId) ?? []) {
+      if (claimIds.has(dependency)) {
+        visit(dependency, [...trail, claimId]);
+      }
+    }
+    visiting.delete(claimId);
+    visited.add(claimId);
+  };
+
+  for (const claimId of claimIds) {
+    visit(claimId, []);
+  }
+
+  for (const item of evidence?.evidence ?? []) {
+    for (const claimId of [...item.supports_claim_ids, ...item.challenges_claim_ids]) {
+      if (!claimIds.has(claimId)) {
+        failures.push(`claim graph integrity: evidence ${item.id} references unknown claim ${claimId}.`);
+      }
+    }
+  }
+
+  for (const contradiction of contradictions?.contradictions ?? []) {
+    for (const claimId of contradiction.claim_ids) {
+      if (!claimIds.has(claimId)) {
+        failures.push(`claim graph integrity: contradiction ${contradiction.id} references unknown claim ${claimId}.`);
+      }
+    }
+  }
+
+  return [...new Set(failures)];
 }
 
 function scoreEvidenceTraceability(claims?: ClaimsArtifact): number {
@@ -189,6 +282,74 @@ function scoreUncertainty(uncertainty?: UncertaintyArtifact): number {
   return round((keyScore + sensitivityScore + changeScore + testsScore) / 4);
 }
 
+function analyzeFaithfulness(loaded: LoadedRun): { score: number; failures: string[]; findings: string[] } {
+  if (!loaded.decisionMemo || !loaded.claims) {
+    return {
+      score: 0,
+      failures: ["faithfulness: decision memo or claims artifact is missing."],
+      findings: []
+    };
+  }
+
+  const failures: string[] = [];
+  const findings: string[] = [];
+  const memo = loaded.decisionMemo.toLowerCase();
+  const forbiddenPhrases = [
+    "guaranteed",
+    "no risk",
+    "risk-free",
+    "certain to succeed",
+    "must commit immediately",
+    "full commitment immediately",
+    "will definitely"
+  ];
+
+  for (const phrase of forbiddenPhrases) {
+    if (memo.includes(phrase)) {
+      failures.push(`faithfulness: memo uses unsupported certainty phrase "${phrase}".`);
+    }
+  }
+
+  const decisionClaims = loaded.claims.claims.filter((claim) => loaded.claims?.root_claim_ids.includes(claim.id) || claim.type === "decision");
+  const hasDecisionClaim = decisionClaims.some((claim) => normalizedIncludes(loaded.decisionMemo ?? "", claim.text));
+  if (!hasDecisionClaim) {
+    failures.push("faithfulness: memo recommendation does not match any root or decision claim.");
+  }
+
+  const keyClaimBullets = extractSectionBullets(loaded.decisionMemo, "## Key Claims");
+  const unsupportedBullets = keyClaimBullets.filter((bullet) => {
+    return !loaded.claims?.claims.some((claim) => tokenOverlap(bullet, claim.text) >= 0.55);
+  });
+  if (unsupportedBullets.length > 0) {
+    failures.push(`faithfulness: key claim bullets do not map to claims.json: ${unsupportedBullets.join(" | ")}`);
+  } else if (keyClaimBullets.length > 0) {
+    findings.push(`Memo key-claim section maps ${keyClaimBullets.length} bullets back to claims.json.`);
+  }
+
+  if (loaded.evidence?.evidence.length && !loaded.decisionMemo.includes("source_inventory.json")) {
+    failures.push("faithfulness: memo discusses evidence quality without pointing to source_inventory.json.");
+  }
+
+  return {
+    score: round(Math.max(0, 1 - failures.length * 0.25)),
+    failures,
+    findings
+  };
+}
+
+function scoreCruxQuality(loaded: LoadedRun): number {
+  const checks = [
+    loaded.contradictions ? loaded.contradictions.contradictions.some((item) => item.severity === "high") : false,
+    loaded.uncertainty ? loaded.uncertainty.what_would_change_my_mind.length >= 4 : false,
+    loaded.uncertainty ? loaded.uncertainty.recommended_tests.length >= 4 : false,
+    loaded.redTeam ? loaded.redTeam.includes("## Recommendation Impact") : false,
+    loaded.decisionMemo ? loaded.decisionMemo.includes("## What Would Change This Decision") : false,
+    loaded.decisionMemo ? loaded.decisionMemo.includes("## Next Tests") : false
+  ];
+
+  return round(checks.filter(Boolean).length / checks.length);
+}
+
 function scoreMarkdownSections(markdown: string | undefined, sections: string[]): number {
   if (!markdown) {
     return 0;
@@ -200,7 +361,7 @@ function scoreMarkdownSections(markdown: string | undefined, sections: string[])
   return round(sectionScore * 0.75 + lengthScore * 0.25);
 }
 
-function buildFindings(loaded: LoadedRun, failedChecks: string[]): string[] {
+function buildFindings(loaded: LoadedRun, failedChecks: string[], faithfulnessFindings: string[]): string[] {
   const findings: string[] = [];
 
   if (failedChecks.length === 0) {
@@ -228,8 +389,10 @@ function buildFindings(loaded: LoadedRun, failedChecks: string[]): string[] {
   }
 
   if (loaded.evidence?.evidence.some((item) => item.limitations.toLowerCase().includes("placeholder"))) {
-    findings.push("Source quality is intentionally limited because deterministic v0.1 uses placeholder offline evidence.");
+    findings.push("Source quality is limited because the run uses placeholder offline evidence.");
   }
+
+  findings.push(...faithfulnessFindings);
 
   return findings;
 }
@@ -245,10 +408,54 @@ function buildRecommendations(loaded: LoadedRun, failedChecks: string[]): string
     recommendations.push("Replace model-output evidence with live sources, uploaded documents, or expert notes for real decisions.");
   }
 
-  recommendations.push("Add memo-to-claim faithfulness checks before using generated prose as a final answer.");
-  recommendations.push("Create golden benchmark inputs and compare eval scores across harness versions.");
+  if (!loaded.runConfig) {
+    recommendations.push("Add run_config.json so replays lock harness version, mapper selection, prompts, and source policy.");
+  }
+
+  recommendations.push("Compare eval scores across harness versions before changing prompts or mappers.");
 
   return recommendations;
+}
+
+function extractSectionBullets(markdown: string, heading: string): string[] {
+  const start = markdown.indexOf(heading);
+  if (start === -1) {
+    return [];
+  }
+
+  const afterHeading = markdown.slice(start + heading.length);
+  const nextHeading = afterHeading.search(/\n## /);
+  const section = nextHeading === -1 ? afterHeading : afterHeading.slice(0, nextHeading);
+  return section
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith("- "))
+    .map((line) => line.slice(2).trim());
+}
+
+function normalizedIncludes(text: string, target: string): boolean {
+  return normalizeText(text).includes(normalizeText(target));
+}
+
+function tokenOverlap(left: string, right: string): number {
+  const leftTokens = new Set(tokenize(left));
+  const rightTokens = new Set(tokenize(right));
+  if (leftTokens.size === 0 || rightTokens.size === 0) {
+    return 0;
+  }
+
+  const intersection = [...leftTokens].filter((token) => rightTokens.has(token)).length;
+  return intersection / Math.min(leftTokens.size, rightTokens.size);
+}
+
+function tokenize(value: string): string[] {
+  return normalizeText(value)
+    .split(" ")
+    .filter((token) => token.length > 2);
+}
+
+function normalizeText(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function round(value: number): number {
