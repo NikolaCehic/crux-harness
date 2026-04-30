@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.10.0 - 2026-04-30
+
+- Added local marketplace manifest schema and registry.
+- Added marketplace compatibility verification for harness major and artifact versions.
+- Added local pack installation into a target packs directory.
+- Added `crux marketplace list`, `crux marketplace verify`, and `crux marketplace install`.
+- Added tests for manifest validation, compatibility failures, local install, and CLI behavior.
+
 ## 1.9.0 - 2026-04-30
 
 - Added Dockerfile, `.dockerignore`, and `docker-compose.yml` for self-hosted local API deployment.

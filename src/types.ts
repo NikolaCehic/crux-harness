@@ -350,6 +350,32 @@ export type PackManifest = {
   };
 };
 
+export type MarketplaceManifest = {
+  schema_version: "crux.marketplace.v1";
+  entries: MarketplaceEntry[];
+};
+
+export type MarketplaceEntry = {
+  id: string;
+  kind: "vertical_pack" | "evaluator_pack" | "prompt_pack" | "benchmark_suite" | "template";
+  name: string;
+  display_name: string;
+  version: string;
+  source: {
+    type: "local";
+    path: string;
+  };
+  compatibility: {
+    harness_major: number;
+    artifact_versions: Record<string, string>;
+  };
+  certification: {
+    status: "certified" | "uncertified";
+    benchmark?: string;
+    checked_at?: string;
+  };
+};
+
 export type RunContext = {
   projectRoot: string;
   runDir: string;

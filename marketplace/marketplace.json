@@ -1,0 +1,124 @@
+{
+  "schema_version": "crux.marketplace.v1",
+  "entries": [
+    {
+      "id": "investment-diligence",
+      "kind": "vertical_pack",
+      "name": "investment-diligence",
+      "display_name": "Investment Diligence",
+      "version": "1.0.0",
+      "source": { "type": "local", "path": "packs/investment-diligence/pack.json" },
+      "compatibility": {
+        "harness_major": 1,
+        "artifact_versions": { "eval_report.json": "1.2.0" }
+      },
+      "certification": {
+        "status": "certified",
+        "benchmark": "e2e/expectations/investment-diligence.json",
+        "checked_at": "2026-04-30"
+      }
+    },
+    {
+      "id": "market-entry",
+      "kind": "vertical_pack",
+      "name": "market-entry",
+      "display_name": "Market Entry",
+      "version": "1.0.0",
+      "source": { "type": "local", "path": "packs/market-entry/pack.json" },
+      "compatibility": {
+        "harness_major": 1,
+        "artifact_versions": { "eval_report.json": "1.2.0" }
+      },
+      "certification": {
+        "status": "certified",
+        "benchmark": "e2e/expectations/market-entry.json",
+        "checked_at": "2026-04-30"
+      }
+    },
+    {
+      "id": "policy-analysis",
+      "kind": "vertical_pack",
+      "name": "policy-analysis",
+      "display_name": "Policy Analysis",
+      "version": "1.0.0",
+      "source": { "type": "local", "path": "packs/policy-analysis/pack.json" },
+      "compatibility": {
+        "harness_major": 1,
+        "artifact_versions": { "eval_report.json": "1.2.0" }
+      },
+      "certification": {
+        "status": "certified",
+        "benchmark": "e2e/expectations/policy-analysis.json",
+        "checked_at": "2026-04-30"
+      }
+    },
+    {
+      "id": "product-strategy",
+      "kind": "vertical_pack",
+      "name": "product-strategy",
+      "display_name": "Product Strategy",
+      "version": "1.0.0",
+      "source": { "type": "local", "path": "packs/product-strategy/pack.json" },
+      "compatibility": {
+        "harness_major": 1,
+        "artifact_versions": { "eval_report.json": "1.2.0" }
+      },
+      "certification": {
+        "status": "certified",
+        "benchmark": "e2e/expectations/product-strategy.json",
+        "checked_at": "2026-04-30"
+      }
+    },
+    {
+      "id": "root-cause-analysis",
+      "kind": "vertical_pack",
+      "name": "root-cause-analysis",
+      "display_name": "Root Cause Analysis",
+      "version": "1.0.0",
+      "source": { "type": "local", "path": "packs/root-cause-analysis/pack.json" },
+      "compatibility": {
+        "harness_major": 1,
+        "artifact_versions": { "eval_report.json": "1.2.0" }
+      },
+      "certification": {
+        "status": "certified",
+        "benchmark": "e2e/expectations/root-cause-analysis.json",
+        "checked_at": "2026-04-30"
+      }
+    },
+    {
+      "id": "scientific-thesis",
+      "kind": "vertical_pack",
+      "name": "scientific-thesis",
+      "display_name": "Scientific Thesis",
+      "version": "1.0.0",
+      "source": { "type": "local", "path": "packs/scientific-thesis/pack.json" },
+      "compatibility": {
+        "harness_major": 1,
+        "artifact_versions": { "eval_report.json": "1.2.0" }
+      },
+      "certification": {
+        "status": "certified",
+        "benchmark": "e2e/expectations/scientific-thesis.json",
+        "checked_at": "2026-04-30"
+      }
+    },
+    {
+      "id": "strategic-tech",
+      "kind": "vertical_pack",
+      "name": "strategic-tech",
+      "display_name": "Strategic Technology",
+      "version": "1.0.0",
+      "source": { "type": "local", "path": "packs/strategic-tech/pack.json" },
+      "compatibility": {
+        "harness_major": 1,
+        "artifact_versions": { "eval_report.json": "1.2.0" }
+      },
+      "certification": {
+        "status": "certified",
+        "benchmark": "e2e/expectations/strategic-tech.json",
+        "checked_at": "2026-04-30"
+      }
+    }
+  ]
+}

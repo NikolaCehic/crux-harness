@@ -1,5 +1,7 @@
 # Phase 10 Spec: Agent Harness Marketplace
 
+Status: started. First implementation slice adds a local marketplace registry, manifest validation, compatibility verification, local pack installation, and CLI marketplace commands.
+
 ## Purpose
 
 Allow users and teams to compose Crux from reusable modules, vertical packs, evaluator packs, prompt packs, and benchmark suites.

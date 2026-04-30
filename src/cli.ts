@@ -5,6 +5,7 @@ import { createCruxApiServer } from "./api.js";
 import { runBenchmark, writeBenchmarkReport } from "./benchmark.js";
 import { checkReplayCompatibility, compareRuns, formatReplayCompatibility, formatRunComparison } from "./contracts.js";
 import { inspectRun } from "./inspect.js";
+import { formatMarketplaceList, formatMarketplaceVerification, installLocalPack, loadMarketplace, verifyMarketplace } from "./marketplace.js";
 import { formatPackInspection, formatPackList, loadPack, loadPacks } from "./packs.js";
 import { replayRun, rerunEvaluation, runHarness } from "./pipeline.js";
 import { addClaimReview, addEvidenceAnnotation, exportReviewedMemo, initReview } from "./review.js";
@@ -16,7 +17,7 @@ const program = new Command();
 program
   .name("crux")
   .description("Spec-driven harness for decision-grade analysis agents.")
-  .version("1.9.0");
+  .version("1.10.0");
 
 program
   .command("run")
@@ -180,6 +181,38 @@ packs
   .description("Inspect a vertical pack manifest")
   .action(async (packName: string) => {
     console.log(formatPackInspection(await loadPack(process.cwd(), path.join("packs", packName, "pack.json"))));
+  });
+
+const marketplace = program
+  .command("marketplace")
+  .description("Local marketplace registry utilities");
+
+marketplace
+  .command("list")
+  .description("List local marketplace entries")
+  .action(async () => {
+    console.log(formatMarketplaceList(await loadMarketplace(process.cwd())));
+  });
+
+marketplace
+  .command("verify")
+  .description("Verify local marketplace compatibility")
+  .action(async () => {
+    const report = await verifyMarketplace(process.cwd());
+    console.log(formatMarketplaceVerification(report));
+    if (!report.compatible) {
+      process.exitCode = 1;
+    }
+  });
+
+marketplace
+  .command("install")
+  .argument("<packPath>", "Path to a local pack.json")
+  .option("--to <packsDir>", "Target packs directory", "packs")
+  .description("Install a local pack into a packs directory")
+  .action(async (packPath: string, options: { to: string }) => {
+    const pack = await installLocalPack(process.cwd(), packPath, options.to);
+    console.log(`Installed pack: ${pack.name}`);
   });
 
 const sources = program

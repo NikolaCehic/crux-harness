@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crux.local/schemas/marketplace.schema.json",
+  "title": "Marketplace",
+  "type": "object",
+  "required": ["schema_version", "entries"],
+  "properties": {
+    "schema_version": { "const": "crux.marketplace.v1" },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "name", "display_name", "version", "source", "compatibility", "certification"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+          "kind": {
+            "enum": ["vertical_pack", "evaluator_pack", "prompt_pack", "benchmark_suite", "template"]
+          },
+          "name": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+          "display_name": { "type": "string", "minLength": 1 },
+          "version": { "type": "string", "minLength": 1 },
+          "source": {
+            "type": "object",
+            "required": ["type", "path"],
+            "properties": {
+              "type": { "const": "local" },
+              "path": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          },
+          "compatibility": {
+            "type": "object",
+            "required": ["harness_major", "artifact_versions"],
+            "properties": {
+              "harness_major": { "type": "integer", "minimum": 1 },
+              "artifact_versions": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "certification": {
+            "type": "object",
+            "required": ["status"],
+            "properties": {
+              "status": { "enum": ["certified", "uncertified"] },
+              "benchmark": { "type": "string" },
+              "checked_at": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

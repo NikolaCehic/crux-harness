@@ -59,5 +59,6 @@ export const schemaIds = {
   uncertainty: "https://crux.local/schemas/uncertainty.schema.json",
   evalReport: "https://crux.local/schemas/eval_report.schema.json",
   review: "https://crux.local/schemas/review.schema.json",
-  pack: "https://crux.local/schemas/pack.schema.json"
+  pack: "https://crux.local/schemas/pack.schema.json",
+  marketplace: "https://crux.local/schemas/marketplace.schema.json"
 } as const;

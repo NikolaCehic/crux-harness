@@ -114,6 +114,14 @@ npm run crux -- packs list
 npm run crux -- packs inspect product-strategy
 ```
 
+Verify and install local marketplace packs:
+
+```bash
+npm run crux -- marketplace list
+npm run crux -- marketplace verify
+npm run crux -- marketplace install packs/product-strategy/pack.json --to packs
+```
+
 Start the local API server:
 
 ```bash
@@ -172,7 +180,7 @@ npm run crux -- benchmark --regression-threshold 0.05
 
 ## Current Implementation
 
-Crux v1.9 is a product-grade local harness for auditable, source-grounded analysis-agent runs. It remains deterministic by default, with optional LLM mappers behind strict schemas and provenance checks.
+Crux v1.10 is a product-grade local harness for auditable, source-grounded analysis-agent runs. It remains deterministic by default, with optional LLM mappers behind strict schemas and provenance checks.
 
 Every run writes `run_config.json`, which locks the harness version, input hash, source policy, budgets, mapper selection, and prompt versions.
 
@@ -203,6 +211,8 @@ Vertical packs live under `packs/<pack-name>/pack.json`. Packs define source req
 External systems can call Crux through the local API server or the TypeScript `CruxLocalSdk`. The first API slice supports creating runs, fetching JSON/text artifacts, and fetching eval reports from the same contracts used by the CLI.
 
 Self-hosted deployment starts with Docker Compose. The container runs the local API, stores generated runs in a Docker volume, and keeps provider secrets in environment variables instead of materializing secret values into configuration output.
+
+The local marketplace registry lives in `marketplace/marketplace.json`. Marketplace entries declare source paths, certification status, harness major compatibility, and artifact-version requirements so reusable packs can extend Crux without weakening core contracts.
 
 Crux includes optional LLM claim and evidence mappers behind the same validation boundary. Deterministic mapping remains the default. To opt in manually, set:
 

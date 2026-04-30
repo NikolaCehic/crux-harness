@@ -1,0 +1,27 @@
+{
+  "schema_version": "crux.marketplace.v1",
+  "entries": [
+    {
+      "id": "bad-product-strategy",
+      "kind": "vertical_pack",
+      "name": "product-strategy",
+      "display_name": "Bad Product Strategy",
+      "version": "1.0.0",
+      "source": {
+        "type": "local",
+        "path": "packs/product-strategy/pack.json"
+      },
+      "compatibility": {
+        "harness_major": 1,
+        "artifact_versions": {
+          "eval_report.json": "9.9.9"
+        }
+      },
+      "certification": {
+        "status": "certified",
+        "benchmark": "e2e/expectations/product-strategy.json",
+        "checked_at": "2026-04-30"
+      }
+    }
+  ]
+}
