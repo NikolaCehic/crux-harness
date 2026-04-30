@@ -127,11 +127,11 @@ npm run crux -- benchmark --regression-threshold 0.05
 
 ## Current Implementation
 
-Crux v1.2 is a product-grade local harness for auditable, source-grounded analysis-agent runs. It remains deterministic by default, with optional LLM mappers behind strict schemas and provenance checks.
+Crux v1.2.1 is a product-grade local harness for auditable, source-grounded analysis-agent runs. It remains deterministic by default, with optional LLM mappers behind strict schemas and provenance checks.
 
 Every run writes `run_config.json`, which locks the harness version, input hash, source policy, budgets, mapper selection, and prompt versions.
 
-The pipeline now records selected stage modules for every major stage, including module ID, version, kind, timeout, retry policy, and optional prompt/model/provider metadata.
+The pipeline now runs through typed stage adapters and records selected stage modules for every major stage, including module ID, version, kind, timeout, retry policy, and optional prompt/model/provider metadata.
 
 The deterministic generator is scope-aware for benchmark coverage. It supports strategic technology, investment diligence, policy analysis, product strategy, scientific thesis evaluation, market entry, and root-cause analysis scenarios.
 

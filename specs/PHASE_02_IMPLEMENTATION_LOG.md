@@ -48,3 +48,48 @@ Verification:
 - `npm test`: 29/29 passing.
 - `npm run benchmark`: 7/7 scenarios passing, 0 regressions.
 - `npm run crux -- inspect runs/latest`: integrity pass, harness version 1.2.0.
+
+## 2026-04-30: Start Stage Adapter Slice
+
+Goal:
+
+- Move from runtime metadata around inline closures to real replaceable stage adapters.
+- Keep the same artifact semantics and benchmark scores.
+- Add typed `run()` methods for current deterministic stage behavior.
+
+Planned files:
+
+- `src/stages/adapters.ts`: stage adapter construction and stage-specific input/output types.
+- `tests/stage-adapters.test.ts`: tests proving adapters are executable, deterministic, and registry-backed.
+- `src/pipeline.ts`: refactor stage execution to call adapters instead of inline artifact builders.
+
+Backtrack note:
+
+- If adapter refactor regresses artifacts, restore `src/pipeline.ts` from commit `e6bc75f` and keep adapter files for a smaller follow-up slice.
+
+## 2026-04-30: Stage Adapters Executed By Pipeline
+
+Files changed:
+
+- `src/stages/types.ts`: added `StageAdapter` and `StageAdapterContext`.
+- `src/stages/adapters.ts`: added executable adapters for all current stages.
+- `src/pipeline.ts`: refactored stage execution to call adapter `run()` methods through `runStageModule`.
+- `tests/stage-adapters.test.ts`: added adapter execution tests for question normalization, source ingestion, claim graph generation, and evidence generation.
+- `package.json`, `package-lock.json`, `src/cli.ts`, `src/run-config.ts`, `tests/v1.test.ts`: bumped harness version to `1.2.1`.
+- `README.md`, `CHANGELOG.md`: documented the adapter execution slice.
+
+Backtrack note:
+
+- The adapter entry point is `createStageAdapters`.
+- To backtrack, restore `src/pipeline.ts` to the `e6bc75f` runtime-wrapper version and leave adapter tests skipped until the adapter layer is reintroduced.
+
+Verification:
+
+- `npm test`: 31/31 passing.
+- `npm run benchmark`: 7/7 scenarios passing, 0 regressions.
+- `npm run crux -- inspect runs/latest`: integrity pass, harness version 1.2.1.
+
+Optimality checkpoint:
+
+- This is the smallest useful adapter slice because it makes stages executable through typed modules without changing artifact semantics.
+- I do not know how to make this slice better without prematurely splitting every stage into a larger directory hierarchy or introducing external runtime dependencies before the local adapter contract is proven.

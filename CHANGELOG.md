@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1 - 2026-04-30
+
+- Added typed executable stage adapters for all current pipeline stages.
+- Refactored the pipeline to execute adapters through the stage runtime instead of passing inline closures.
+- Added adapter tests proving deterministic source-grounded claims and evidence can be produced through the adapter layer.
+
 ## 1.2.0 - 2026-04-30
 
 - Added formal stage module metadata for every current pipeline stage.

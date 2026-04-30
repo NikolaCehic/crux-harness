@@ -6,7 +6,7 @@ import type { EvidenceMapperSelection } from "./llm.js";
 import type { StageModule } from "./stages/types.js";
 import type { RunConfig, RunInput } from "./types.js";
 
-export const HARNESS_VERSION = "1.2.0";
+export const HARNESS_VERSION = "1.2.1";
 
 export type BuildRunConfigInput = {
   projectRoot: string;

@@ -38,6 +38,17 @@ export type StageModuleRunResult<T> = {
   duration_ms: number;
 };
 
+export type StageAdapterContext = {
+  projectRoot: string;
+  runDir: string;
+  input: import("../types.js").RunInput;
+  llm?: import("../llm.js").LlmClient;
+};
+
+export type StageAdapter<Input, Output> = StageModule & {
+  run(input: Input, context: StageAdapterContext): Promise<Output>;
+};
+
 export function stageModuleMetadata(module: StageModule, extra: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     module_id: module.module_id,
