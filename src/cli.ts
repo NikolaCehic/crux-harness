@@ -8,6 +8,7 @@ import { inspectRun } from "./inspect.js";
 import { formatMarketplaceList, formatMarketplaceVerification, installLocalPack, loadMarketplace, verifyMarketplace } from "./marketplace.js";
 import { formatPackInspection, formatPackList, loadPack, loadPacks } from "./packs.js";
 import { replayRun, rerunEvaluation, runHarness } from "./pipeline.js";
+import { runQuery } from "./query-intake.js";
 import { addClaimReview, addEvidenceAnnotation, exportReviewedMemo, initReview } from "./review.js";
 import { writeRunReport } from "./run-report.js";
 import { importSources } from "./source-importer.js";
@@ -17,7 +18,7 @@ const program = new Command();
 program
   .name("crux")
   .description("Spec-driven harness for decision-grade analysis agents.")
-  .version("1.10.0");
+  .version("1.11.0");
 
 program
   .command("run")
@@ -26,6 +27,28 @@ program
   .action(async (input: string) => {
     const result = await runHarness(process.cwd(), input);
     console.log(`Run complete: ${path.relative(process.cwd(), result.runDir)}`);
+  });
+
+program
+  .command("query")
+  .argument("<question>", "Raw arbitrary question to normalize and run")
+  .option("--context <text>", "Decision or analysis context")
+  .option("--time-horizon <text>", "Time horizon for the analysis")
+  .option("--output-goal <text>", "Output goal for the generated run", "decision memo")
+  .option("--source-policy <policy>", "Source policy for the generated run", "hybrid")
+  .description("Normalize a raw arbitrary query and run the Crux pipeline")
+  .action(async (question: string, options: { context?: string; timeHorizon?: string; outputGoal?: string; sourcePolicy?: string }) => {
+    const result = await runQuery(process.cwd(), question, {
+      context: options.context,
+      timeHorizon: options.timeHorizon,
+      outputGoal: options.outputGoal,
+      sourcePolicy: options.sourcePolicy
+    });
+    console.log(`Query run complete: ${path.relative(process.cwd(), result.runDir)}`);
+    console.log(`Intent: ${result.intake.intent}`);
+    console.log(`Scope: ${result.intake.analysis_scope}`);
+    console.log(`Answerability: ${result.intake.answerability}`);
+    console.log(`Risk: ${result.intake.risk_level}`);
   });
 
 program

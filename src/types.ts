@@ -1,6 +1,7 @@
 export type RunInput = {
   scenario_id?: string;
   analysis_scope?: string;
+  query_intake?: QueryIntakeArtifact;
   source_pack?: string | {
     path: string;
   };
@@ -20,6 +21,35 @@ export type RunInput = {
     max_llm_calls?: number;
   };
   user_prior?: string;
+};
+
+export type QueryIntent = "decision" | "diagnostic" | "comparison" | "planning" | "research" | "open_exploration";
+
+export type QueryIntakeArtifact = {
+  schema_version: "crux.query_intake.v1";
+  original_query: string;
+  normalized_query: string;
+  analysis_scope: string;
+  intent: QueryIntent;
+  complexity: "low" | "moderate" | "high";
+  risk_level: "low" | "medium" | "high";
+  answerability: "answerable" | "answerable_with_assumptions" | "needs_clarification" | "blocked";
+  source_policy: string;
+  assumptions: string[];
+  clarifying_questions: string[];
+  source_needs: Array<{
+    source_type: "web" | "paper" | "dataset" | "internal_document" | "expert_input";
+    question: string;
+    priority: "required" | "recommended";
+  }>;
+  generated_input: {
+    question: string;
+    decision_context: string;
+    time_horizon: string;
+    output_goal: string;
+    analysis_scope: string;
+    source_policy: string;
+  };
 };
 
 export type RunConfig = {

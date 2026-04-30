@@ -68,6 +68,9 @@ export async function validateRunIntegrity(projectRoot: string, runDir: string):
   const contradictions = await readJson<ContradictionsArtifact>(absoluteRunDir, "contradictions.json", failures);
   const uncertainty = await readJson<UncertaintyArtifact>(absoluteRunDir, "uncertainty.json", failures);
   const evalReport = await readJson<EvalReport>(absoluteRunDir, "eval_report.json", failures);
+  const queryIntake = existsSync(path.join(absoluteRunDir, "query_intake.json"))
+    ? await readJson<unknown>(absoluteRunDir, "query_intake.json", failures)
+    : undefined;
   const redTeam = await readText(absoluteRunDir, "red_team.md", failures);
   const decisionMemo = await readText(absoluteRunDir, "decision_memo.md", failures);
   const traceLines = await readTrace(absoluteRunDir, failures);
@@ -81,6 +84,9 @@ export async function validateRunIntegrity(projectRoot: string, runDir: string):
   await validateSchema(validator, schemaIds.contradictions, "contradictions.json", contradictions, failures);
   await validateSchema(validator, schemaIds.uncertainty, "uncertainty.json", uncertainty, failures);
   await validateSchema(validator, schemaIds.evalReport, "eval_report.json", evalReport, failures);
+  if (queryIntake) {
+    await validateSchema(validator, schemaIds.queryIntake, "query_intake.json", queryIntake, failures);
+  }
 
   if (claims && evidence && contradictions) {
     validateClaimEvidenceGraph(claims, evidence, contradictions, failures);

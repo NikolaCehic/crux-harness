@@ -1,7 +1,11 @@
 # Changelog
 
-## Unreleased
+## 1.11.0 - 2026-04-30
 
+- Added scope-agnostic arbitrary query intake with `query_intake.json`.
+- Added `crux query "<question>"` to normalize raw questions into audited runs.
+- Added generic analysis fallback behavior for unknown scopes.
+- Added query-intake schema validation and tests for ambiguous, high-stakes, generic, and CLI query flows.
 - Added extended E2E expectation checks for required artifacts, evaluator council roles, diagnostics, trace stages, static report anchors, expected failure diagnostics, and human review summaries.
 - Added nested E2E suites for benchmark DSL coverage, black-box CLI product journeys, and adversarial broken-run fixtures.
 - Added `test:e2e`, `test:journeys`, `test:adversarial`, and `release:verify` scripts.

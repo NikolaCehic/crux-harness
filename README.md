@@ -70,6 +70,12 @@ Run the example:
 npm run crux -- run examples/frontier-agent-platform.yaml
 ```
 
+Run an arbitrary raw query:
+
+```bash
+npm run crux -- query "Should our operations team automate invoice approvals this quarter?" --context "A finance operations lead is choosing the next automation target." --time-horizon "90 days"
+```
+
 Evaluate an existing run:
 
 ```bash
@@ -197,7 +203,7 @@ The release gate runs TypeScript checking, unit/integration tests, extended E2E 
 
 ## Current Implementation
 
-Crux v1.10 is a product-grade local harness for auditable, source-grounded analysis-agent runs. It remains deterministic by default, with optional LLM mappers behind strict schemas and provenance checks.
+Crux v1.11 is a product-grade local harness for auditable, source-grounded analysis-agent runs. It remains deterministic by default, with optional LLM mappers behind strict schemas and provenance checks.
 
 Every run writes `run_config.json`, which locks the harness version, input hash, source policy, budgets, mapper selection, and prompt versions.
 
@@ -232,6 +238,8 @@ Self-hosted deployment starts with Docker Compose. The container runs the local 
 The local marketplace registry lives in `marketplace/marketplace.json`. Marketplace entries declare source paths, certification status, harness major compatibility, and artifact-version requirements so reusable packs can extend Crux without weakening core contracts.
 
 The E2E verification suite now has dedicated benchmark, journey, and adversarial tiers. Benchmark expectations can require artifacts, evaluator council roles, diagnostics, trace stages, static report anchors, expected failure diagnostics, and human review summary state. `npm run release:verify` is the single local command for deciding whether the harness is shippable.
+
+Raw arbitrary queries can enter through `crux query`. Query intake writes `query_intake.json`, classifies intent, complexity, risk, answerability, clarifying questions, assumptions, and source needs, then generates a normal audited run input. Unknown scopes now use a generic scope-agnostic profile instead of falling back to an unrelated vertical.
 
 Crux includes optional LLM claim and evidence mappers behind the same validation boundary. Deterministic mapping remains the default. To opt in manually, set:
 

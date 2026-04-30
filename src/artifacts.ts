@@ -352,7 +352,7 @@ export function buildInitialEvalReport(): EvalReport {
 function getScopeProfile(input: RunInput): ScopeProfile {
   const scope = normalizeScope(input.analysis_scope ?? input.scenario_id ?? inferScope(input.question));
   const profiles = buildProfiles();
-  return profiles[scope] ?? profiles["strategic-tech"];
+  return profiles[scope] ?? buildGenericProfile(input, scope);
 }
 
 function normalizeScope(scope: string): string {
@@ -367,7 +367,50 @@ function inferScope(question: string): string {
   if (lower.includes("retrieval") || lower.includes("rag") || lower.includes("context window")) return "scientific-thesis";
   if (lower.includes("market") || lower.includes("fintech")) return "market-entry";
   if (lower.includes("activation") || lower.includes("root-cause") || lower.includes("redesign")) return "root-cause-analysis";
-  return "strategic-tech";
+  return "general-analysis";
+}
+
+function buildGenericProfile(input: RunInput, scope: string): ScopeProfile {
+  const subject = extractGenericSubject(input.question);
+
+  return {
+    scope,
+    decisionType: "scope-agnostic analysis",
+    owner: "user or accountable decision maker",
+    subject,
+    opportunity: `There may be a practical opportunity to improve the outcome around ${subject}, but the relevant evidence must be made explicit.`,
+    differentiator: `A useful answer for ${subject} depends on separating decision criteria, constraints, and evidence instead of relying on generic advice.`,
+    primaryRisk: `The analysis may overfit to the wording of the query if the actual constraints around ${subject} are missing.`,
+    executionRisk: `The recommended path for ${subject} may fail if owners, resources, time horizon, or operational constraints are unclear.`,
+    adoptionBlocker: `Stakeholder incentives, implementation friction, and missing source material may block progress on ${subject}.`,
+    validationTest: `Collect the smallest set of source-backed evidence that would change the recommendation for ${subject}`,
+    externalPressure: `external constraints or new evidence change the best path for ${subject}`,
+    cruxCondition: `the user can identify the decision criteria, constraints, and evidence needed for ${subject}`,
+    stagedRecommendation: `Do not treat the first answer as final; use a staged analysis of ${subject} that makes assumptions and evidence gaps explicit.`,
+    redTeamThesis: `The user should not act on a generic answer about ${subject} until the harness has surfaced assumptions, missing evidence, and decision criteria.`,
+    requiredEvidence: [
+      `Authoritative context and constraints for ${subject}.`,
+      `Current evidence or data that supports the central claim about ${subject}.`,
+      `Counterevidence or failure cases that would weaken the recommendation about ${subject}.`,
+      `A clear decision owner, time horizon, and action threshold for ${subject}.`
+    ]
+  };
+}
+
+function extractGenericSubject(question: string): string {
+  const normalized = question
+    .toLowerCase()
+    .replace(/[?!.]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const stripped = normalized
+    .replace(/^(should|could|can|would)\s+(we|i|our team|the team)\s+/i, "")
+    .replace(/^how should\s+/i, "")
+    .replace(/^what should\s+(we|i|our team|the team)\s+do\s+(about|with)?\s*/i, "")
+    .replace(/^why\s+(is|are|did|does)\s+/i, "")
+    .trim();
+
+  return stripped || "the arbitrary user question";
 }
 
 function buildProfiles(): Record<string, ScopeProfile> {

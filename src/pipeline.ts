@@ -54,6 +54,23 @@ export async function runHarness(projectRoot: string, inputPath: string): Promis
   });
   await validateOrThrow(validator, schemaIds.runConfig, runConfig);
   await writeJson(artifactPath(runDir, "run_config.json"), runConfig);
+  if (input.query_intake) {
+    await validateOrThrow(validator, schemaIds.queryIntake, input.query_intake);
+    await writeJson(artifactPath(runDir, "query_intake.json"), input.query_intake);
+    await trace(runDir, {
+      stage: "query_intake",
+      event_type: "info",
+      message: "Loaded scope-agnostic query intake",
+      input_artifacts: ["input.yaml"],
+      output_artifacts: ["query_intake.json"],
+      metadata: {
+        intent: input.query_intake.intent,
+        answerability: input.query_intake.answerability,
+        risk_level: input.query_intake.risk_level,
+        analysis_scope: input.query_intake.analysis_scope
+      }
+    });
+  }
 
   const context: RunContext = {
     projectRoot,

@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crux.local/schemas/query_intake.schema.json",
+  "title": "QueryIntake",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "original_query",
+    "normalized_query",
+    "analysis_scope",
+    "intent",
+    "complexity",
+    "risk_level",
+    "answerability",
+    "source_policy",
+    "assumptions",
+    "clarifying_questions",
+    "source_needs",
+    "generated_input"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "crux.query_intake.v1" },
+    "original_query": { "type": "string", "minLength": 1 },
+    "normalized_query": { "type": "string", "minLength": 1 },
+    "analysis_scope": { "type": "string", "minLength": 1 },
+    "intent": {
+      "type": "string",
+      "enum": ["decision", "diagnostic", "comparison", "planning", "research", "open_exploration"]
+    },
+    "complexity": { "type": "string", "enum": ["low", "moderate", "high"] },
+    "risk_level": { "type": "string", "enum": ["low", "medium", "high"] },
+    "answerability": {
+      "type": "string",
+      "enum": ["answerable", "answerable_with_assumptions", "needs_clarification", "blocked"]
+    },
+    "source_policy": { "type": "string", "minLength": 1 },
+    "assumptions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "clarifying_questions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "source_needs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source_type", "question", "priority"],
+        "properties": {
+          "source_type": {
+            "type": "string",
+            "enum": ["web", "paper", "dataset", "internal_document", "expert_input"]
+          },
+          "question": { "type": "string", "minLength": 1 },
+          "priority": { "type": "string", "enum": ["required", "recommended"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "generated_input": {
+      "type": "object",
+      "required": ["question", "decision_context", "time_horizon", "output_goal", "analysis_scope", "source_policy"],
+      "properties": {
+        "question": { "type": "string", "minLength": 1 },
+        "decision_context": { "type": "string", "minLength": 1 },
+        "time_horizon": { "type": "string", "minLength": 1 },
+        "output_goal": { "type": "string", "minLength": 1 },
+        "analysis_scope": { "type": "string", "minLength": 1 },
+        "source_policy": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

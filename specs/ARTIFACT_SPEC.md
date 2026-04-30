@@ -35,6 +35,7 @@ trace.jsonl
 Optional sidecar files:
 
 ```text
+query_intake.json
 review.json
 reviewed_memo.md
 run_report.html
@@ -63,6 +64,29 @@ Optional fields:
 - `tool_budget`
 - `model_budget`
 - `user_prior`
+- `query_intake`
+
+## query_intake.json
+
+Optional sidecar artifact written when a run starts from a raw arbitrary query.
+
+Required fields:
+
+- `schema_version`
+- `original_query`
+- `normalized_query`
+- `analysis_scope`
+- `intent`
+- `complexity`
+- `risk_level`
+- `answerability`
+- `source_policy`
+- `assumptions`
+- `clarifying_questions`
+- `source_needs`
+- `generated_input`
+
+`query_intake.json` is the trust boundary between a raw user query and the normalized `input.yaml` consumed by the pipeline.
 
 ## run_config.json
 

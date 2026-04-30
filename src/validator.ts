@@ -58,6 +58,7 @@ export const schemaIds = {
   contradictions: "https://crux.local/schemas/contradictions.schema.json",
   uncertainty: "https://crux.local/schemas/uncertainty.schema.json",
   evalReport: "https://crux.local/schemas/eval_report.schema.json",
+  queryIntake: "https://crux.local/schemas/query_intake.schema.json",
   review: "https://crux.local/schemas/review.schema.json",
   pack: "https://crux.local/schemas/pack.schema.json",
   marketplace: "https://crux.local/schemas/marketplace.schema.json"
