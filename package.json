@@ -10,8 +10,12 @@
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test dist/tests/*.test.js",
+    "test:e2e": "npm run build && node --test dist/tests/e2e/*.test.js",
+    "test:journeys": "npm run build && node --test dist/tests/journeys/*.test.js",
+    "test:adversarial": "npm run build && node --test dist/tests/adversarial/*.test.js",
     "crux": "npm run build --silent && node dist/src/cli.js",
-    "benchmark": "npm run crux -- benchmark --report test-results/benchmark-latest.json"
+    "benchmark": "npm run crux -- benchmark --report test-results/benchmark-latest.json",
+    "release:verify": "npm run check && npm test && npm run test:e2e && npm run test:journeys && npm run test:adversarial && npm run benchmark && npm run crux -- marketplace verify"
   },
   "dependencies": {
     "ajv": "^8.17.1",

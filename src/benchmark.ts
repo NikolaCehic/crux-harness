@@ -1,8 +1,11 @@
+import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { ClaimsArtifact, EvalReport, EvidenceArtifact, SourceChunksArtifact, SourceInventory } from "./types.js";
+import type { ClaimsArtifact, EvalDiagnostic, EvalReport, EvidenceArtifact, ReviewArtifact, SourceChunksArtifact, SourceInventory, TraceEvent } from "./types.js";
 import { validateRunIntegrity } from "./integrity.js";
 import { runHarness } from "./pipeline.js";
+import { loadRunArtifactBundle } from "./run-bundle.js";
+import { renderRunReportHtml } from "./run-report.js";
 
 export type BenchmarkExpectation = {
   scenario_id: string;
@@ -18,6 +21,23 @@ export type BenchmarkExpectation = {
   min_source_backed_evidence?: number;
   requires_verified_excerpts?: boolean;
   min_scores: Record<string, number>;
+  required_artifacts?: string[];
+  required_eval_council_roles?: Array<EvalReport["council"]["reviewers"][number]["role_id"]>;
+  required_diagnostics?: string[];
+  forbidden_diagnostics?: string[];
+  required_trace_stages?: string[];
+  required_report_anchors?: string[];
+  expected_failure?: {
+    stage: string;
+    category: string;
+    severity?: EvalDiagnostic["severity"];
+  };
+  required_review_summary?: {
+    approved_claims?: string[];
+    rejected_claims?: string[];
+    evidence_annotations?: string[];
+    stage_rerun_requests?: string[];
+  };
 };
 
 export type BenchmarkScenarioResult = {
@@ -168,6 +188,12 @@ export async function checkBenchmarkExpectation(runDir: string, expectation: Ben
     readJson<{ question: string; context: string }>(runDir, "question_spec.json")
   ]);
 
+  for (const artifact of expectation.required_artifacts ?? []) {
+    if (!existsSync(path.join(runDir, artifact))) {
+      failures.push(`${expectation.scenario_id}: missing required artifact ${artifact}.`);
+    }
+  }
+
   if (claims.claims.length < expectation.min_claims) {
     failures.push(`${expectation.scenario_id}: expected at least ${expectation.min_claims} claims, got ${claims.claims.length}.`);
   }
@@ -247,6 +273,67 @@ export async function checkBenchmarkExpectation(runDir: string, expectation: Ben
     }
   }
 
+  const councilRoles = new Set(evalReport.council.reviewers.map((reviewer) => reviewer.role_id));
+  for (const role of expectation.required_eval_council_roles ?? []) {
+    if (!councilRoles.has(role)) {
+      failures.push(`${expectation.scenario_id}: eval council missing required role ${role}.`);
+    }
+  }
+
+  for (const diagnosticNeedle of expectation.required_diagnostics ?? []) {
+    if (!evalReport.diagnostics.some((diagnostic) => matchesDiagnostic(diagnostic, diagnosticNeedle))) {
+      failures.push(`${expectation.scenario_id}: missing required diagnostic ${diagnosticNeedle}.`);
+    }
+  }
+
+  for (const diagnosticNeedle of expectation.forbidden_diagnostics ?? []) {
+    const matches = evalReport.diagnostics.filter((diagnostic) => matchesDiagnostic(diagnostic, diagnosticNeedle));
+    if (matches.length > 0) {
+      failures.push(`${expectation.scenario_id}: found forbidden diagnostic ${diagnosticNeedle}: ${matches.map((diagnostic) => diagnostic.id).join(", ")}.`);
+    }
+  }
+
+  if (expectation.expected_failure) {
+    const expectedFailure = expectation.expected_failure;
+    const matches = evalReport.diagnostics.some((diagnostic) => {
+      return diagnostic.stage === expectedFailure.stage
+        && diagnostic.category === expectedFailure.category
+        && (!expectedFailure.severity || diagnostic.severity === expectedFailure.severity);
+    });
+    if (!matches) {
+      failures.push(`${expectation.scenario_id}: expected failure ${expectedFailure.stage}/${expectedFailure.category} was not emitted.`);
+    }
+  }
+
+  if ((expectation.required_trace_stages ?? []).length > 0) {
+    const trace = await readTrace(runDir);
+    const stages = new Set(trace.map((event) => event.stage));
+    for (const stage of expectation.required_trace_stages ?? []) {
+      if (!stages.has(stage)) {
+        failures.push(`${expectation.scenario_id}: trace missing required stage ${stage}.`);
+      }
+    }
+  }
+
+  if ((expectation.required_report_anchors ?? []).length > 0) {
+    const projectRoot = inferProjectRoot(runDir);
+    const html = renderRunReportHtml(await loadRunArtifactBundle(projectRoot, runDir));
+    for (const anchor of expectation.required_report_anchors ?? []) {
+      if (!html.includes(`id="${anchor}"`)) {
+        failures.push(`${expectation.scenario_id}: run report missing required anchor ${anchor}.`);
+      }
+    }
+  }
+
+  if (expectation.required_review_summary) {
+    const review = await readOptionalJson<ReviewArtifact>(runDir, "review.json");
+    if (!review) {
+      failures.push(`${expectation.scenario_id}: missing review.json for required review summary.`);
+    } else {
+      validateReviewSummary(expectation.scenario_id, review, expectation.required_review_summary, failures);
+    }
+  }
+
   return {
     failures,
     scores: evalReport.scores,
@@ -260,6 +347,50 @@ export async function checkBenchmarkExpectation(runDir: string, expectation: Ben
       verified_excerpts: verifiedExcerpts
     }
   };
+}
+
+function matchesDiagnostic(diagnostic: EvalDiagnostic, needle: string): boolean {
+  const normalizedNeedle = needle.toLowerCase();
+  return [
+    diagnostic.id,
+    diagnostic.stage,
+    diagnostic.severity,
+    diagnostic.category,
+    diagnostic.message,
+    diagnostic.recommended_fix
+  ].some((value) => value.toLowerCase().includes(normalizedNeedle));
+}
+
+function validateReviewSummary(
+  scenarioId: string,
+  review: ReviewArtifact,
+  required: NonNullable<BenchmarkExpectation["required_review_summary"]>,
+  failures: string[]
+): void {
+  for (const claimId of required.approved_claims ?? []) {
+    if (!review.summary.approved_claims.includes(claimId)) {
+      failures.push(`${scenarioId}: review summary missing approved claim ${claimId}.`);
+    }
+  }
+
+  for (const claimId of required.rejected_claims ?? []) {
+    if (!review.summary.rejected_claims.includes(claimId)) {
+      failures.push(`${scenarioId}: review summary missing rejected claim ${claimId}.`);
+    }
+  }
+
+  const evidenceAnnotationIds = new Set(review.summary.evidence_annotations.map((annotation) => annotation.evidence_id));
+  for (const evidenceId of required.evidence_annotations ?? []) {
+    if (!evidenceAnnotationIds.has(evidenceId)) {
+      failures.push(`${scenarioId}: review summary missing evidence annotation ${evidenceId}.`);
+    }
+  }
+
+  for (const stage of required.stage_rerun_requests ?? []) {
+    if (!review.summary.stage_rerun_requests.includes(stage)) {
+      failures.push(`${scenarioId}: review summary missing stage rerun request ${stage}.`);
+    }
+  }
 }
 
 function countVerifiedExcerpts(evidence: EvidenceArtifact, sourceChunks: SourceChunksArtifact): number {
@@ -352,8 +483,32 @@ async function readJson<T>(runDir: string, file: string): Promise<T> {
   return JSON.parse(await readFile(path.join(runDir, file), "utf8")) as T;
 }
 
+async function readOptionalJson<T>(runDir: string, file: string): Promise<T | undefined> {
+  try {
+    return await readJson<T>(runDir, file);
+  } catch {
+    return undefined;
+  }
+}
+
+async function readTrace(runDir: string): Promise<TraceEvent[]> {
+  const raw = await readText(runDir, "trace.jsonl");
+  return raw
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => JSON.parse(line) as TraceEvent);
+}
+
 async function readText(runDir: string, file: string): Promise<string> {
   return readFile(path.join(runDir, file), "utf8");
+}
+
+function inferProjectRoot(runDir: string): string {
+  const absoluteRunDir = path.resolve(runDir);
+  if (path.basename(path.dirname(absoluteRunDir)) === "runs") {
+    return path.dirname(path.dirname(absoluteRunDir));
+  }
+  return process.cwd();
 }
 
 function round(value: number): number {

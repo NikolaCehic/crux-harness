@@ -5,7 +5,11 @@ Use this checklist before tagging a Crux release.
 ## Required Gates
 
 - `npm ci`
+- `npm run release:verify`
 - `npm test`
+- `npm run test:e2e`
+- `npm run test:journeys`
+- `npm run test:adversarial`
 - `npm run benchmark`
 - `npm run crux -- run examples/frontier-agent-platform.yaml`
 - `npm run crux -- inspect runs/latest`
@@ -17,6 +21,7 @@ Use this checklist before tagging a Crux release.
 - Deployment manifest tests pass through `npm test`.
 - Verify `runs/latest/run_config.json` has the intended harness version.
 - Verify benchmark report has `7/7` scenarios passing and `0` regressions.
+- Verify `npm run release:verify` passes as the single local ship gate.
 
 ## Artifact Contract
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Added extended E2E expectation checks for required artifacts, evaluator council roles, diagnostics, trace stages, static report anchors, expected failure diagnostics, and human review summaries.
+- Added nested E2E suites for benchmark DSL coverage, black-box CLI product journeys, and adversarial broken-run fixtures.
+- Added `test:e2e`, `test:journeys`, `test:adversarial`, and `release:verify` scripts.
+- Added E2E strategy and Phase 11 implementation docs.
+
 ## 1.10.0 - 2026-04-30
 
 - Added local marketplace manifest schema and registry.

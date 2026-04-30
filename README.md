@@ -45,6 +45,7 @@ runs/<run_id>/
 - [Artifact Spec](specs/ARTIFACT_SPEC.md)
 - [Run Spec](specs/RUN_SPEC.md)
 - [Eval Spec](specs/EVAL_SPEC.md)
+- [E2E Test Strategy](specs/E2E_TEST_STRATEGY.md)
 - [MVP Build Plan](specs/MVP_BUILD_PLAN.md)
 - [v1 Acceptance](specs/V1_ACCEPTANCE.md)
 - [Release Checklist](specs/RELEASE_CHECKLIST.md)
@@ -152,6 +153,14 @@ Run tests:
 npm test
 ```
 
+Run the extended E2E tiers:
+
+```bash
+npm run test:e2e
+npm run test:journeys
+npm run test:adversarial
+```
+
 Run the scoped E2E benchmark suite:
 
 ```bash
@@ -177,6 +186,14 @@ Use a custom regression threshold:
 ```bash
 npm run crux -- benchmark --regression-threshold 0.05
 ```
+
+Run the full release gate:
+
+```bash
+npm run release:verify
+```
+
+The release gate runs TypeScript checking, unit/integration tests, extended E2E tests, the benchmark suite, and marketplace compatibility verification.
 
 ## Current Implementation
 
@@ -213,6 +230,8 @@ External systems can call Crux through the local API server or the TypeScript `C
 Self-hosted deployment starts with Docker Compose. The container runs the local API, stores generated runs in a Docker volume, and keeps provider secrets in environment variables instead of materializing secret values into configuration output.
 
 The local marketplace registry lives in `marketplace/marketplace.json`. Marketplace entries declare source paths, certification status, harness major compatibility, and artifact-version requirements so reusable packs can extend Crux without weakening core contracts.
+
+The E2E verification suite now has dedicated benchmark, journey, and adversarial tiers. Benchmark expectations can require artifacts, evaluator council roles, diagnostics, trace stages, static report anchors, expected failure diagnostics, and human review summary state. `npm run release:verify` is the single local command for deciding whether the harness is shippable.
 
 Crux includes optional LLM claim and evidence mappers behind the same validation boundary. Deterministic mapping remains the default. To opt in manually, set:
 
