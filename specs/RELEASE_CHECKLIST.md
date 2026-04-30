@@ -9,6 +9,7 @@ Use this checklist before tagging a Crux release.
 - `npm run benchmark`
 - `npm run crux -- run examples/frontier-agent-platform.yaml`
 - `npm run crux -- inspect runs/latest`
+- `npm run crux -- report runs/latest --out test-results/run-report.html`
 - Verify `runs/latest/run_config.json` has the intended harness version.
 - Verify benchmark report has `7/7` scenarios passing and `0` regressions.
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.0 - 2026-04-30
+
+- Added a run artifact bundle loader for visual inspection surfaces.
+- Added `crux report <runDir> --out <file>` to write a static HTML run inspector.
+- Added a linked report view for memo, claims, evidence, source excerpts, contradictions, uncertainty, eval council, diagnostics, and trace events.
+- Added tests for bundle relationships, report anchors, and compiled CLI report generation.
+
 ## 1.4.1 - 2026-04-30
 
 - Added structured eval diagnostics with stage, severity, category, message, and recommended fix fields.

@@ -5,6 +5,7 @@ import { runBenchmark, writeBenchmarkReport } from "./benchmark.js";
 import { checkReplayCompatibility, compareRuns, formatReplayCompatibility, formatRunComparison } from "./contracts.js";
 import { inspectRun } from "./inspect.js";
 import { replayRun, rerunEvaluation, runHarness } from "./pipeline.js";
+import { writeRunReport } from "./run-report.js";
 import { importSources } from "./source-importer.js";
 
 const program = new Command();
@@ -12,7 +13,7 @@ const program = new Command();
 program
   .name("crux")
   .description("Spec-driven harness for decision-grade analysis agents.")
-  .version("1.4.1");
+  .version("1.5.0");
 
 program
   .command("run")
@@ -69,6 +70,16 @@ program
   .description("Print a compact summary of a Crux run")
   .action(async (runDir: string) => {
     console.log(await inspectRun(process.cwd(), runDir));
+  });
+
+program
+  .command("report")
+  .argument("<runDir>", "Path to a run directory")
+  .option("--out <file>", "HTML report path. Defaults to <runDir>/run_report.html")
+  .description("Write a static HTML inspector for a Crux run")
+  .action(async (runDir: string, options: { out?: string }) => {
+    const reportPath = await writeRunReport(process.cwd(), runDir, options.out);
+    console.log(`Report written: ${reportPath}`);
   });
 
 const sources = program
