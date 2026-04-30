@@ -1,0 +1,20 @@
+scenario_id: "arbitrary-warehouse-returns"
+analysis_scope: "custom-warehouse-operations"
+question: "How should a warehouse operations team reduce a sudden rise in return-processing delays without increasing headcount?"
+decision_context: "A mid-sized e-commerce warehouse has seen return-processing cycle time double over four weeks. Leadership needs a practical operational diagnosis and action plan that can be tested quickly."
+time_horizon: "30 days"
+output_goal: "diagnostic decision memo"
+geography: "US"
+risk_tolerance: "medium"
+known_constraints:
+  - "No additional full-time headcount is available this quarter."
+  - "Any recommendation must preserve order-fulfillment service levels."
+  - "The team can change workflow sequencing, staffing allocation, triage rules, tooling, and measurement."
+  - "The first test should be reversible within one week if it creates operational drag."
+source_policy: "offline"
+tool_budget:
+  max_research_items: 5
+  max_agent_steps: 6
+model_budget:
+  max_llm_calls: 4
+user_prior: "The delay may be caused by intake batching, unclear exception handling, or poor visibility into return reason codes."
