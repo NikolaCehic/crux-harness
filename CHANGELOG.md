@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.0 - 2026-04-30
+
+- Added formal stage module metadata for every current pipeline stage.
+- Added deterministic stage registry plus LLM module metadata for claim decomposition and evidence mapping.
+- Added `runStageModule` with timeout and retry execution.
+- Extended `run_config.json` with selected stage modules.
+- Added trace metadata for module ID, version, kind, prompt, provider, model, timeout, retries, attempts, and duration.
+- Added stage runtime tests for registry defaults, LLM selection metadata, retries, and pipeline trace/run-config recording.
+
 ## 1.1.0 - 2026-04-30
 
 - Added `crux sources import <inputDir> --out <sourcePackDir>` for converting raw Markdown, TXT, and CSV files into Crux source packs.

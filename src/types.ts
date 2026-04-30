@@ -49,6 +49,17 @@ export type RunConfig = {
       reason: string;
     };
   };
+  stages: Array<{
+    stage: string;
+    module_id: string;
+    module_version: string;
+    kind: "deterministic" | "llm" | "external";
+    prompt_version?: string;
+    provider?: string;
+    model?: string;
+    timeout_ms: number;
+    max_retries: number;
+  }>;
   prompts: {
     claim_decomposer: string;
     evidence_mapper: string;

@@ -13,6 +13,7 @@
     "source_pack",
     "budgets",
     "mappers",
+    "stages",
     "prompts"
   ],
   "properties": {
@@ -50,6 +51,25 @@
         "evidence_mapper": { "$ref": "#/$defs/mapper" }
       },
       "additionalProperties": false
+    },
+    "stages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["stage", "module_id", "module_version", "kind", "timeout_ms", "max_retries"],
+        "properties": {
+          "stage": { "type": "string", "minLength": 1 },
+          "module_id": { "type": "string", "minLength": 1 },
+          "module_version": { "type": "string", "minLength": 1 },
+          "kind": { "type": "string", "enum": ["deterministic", "llm", "external"] },
+          "prompt_version": { "type": "string" },
+          "provider": { "type": "string" },
+          "model": { "type": "string" },
+          "timeout_ms": { "type": "integer", "minimum": 1 },
+          "max_retries": { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
     },
     "prompts": {
       "type": "object",

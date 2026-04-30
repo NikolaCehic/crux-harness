@@ -3,9 +3,10 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { ClaimDecomposerSelection } from "./claim-decomposer.js";
 import type { EvidenceMapperSelection } from "./llm.js";
+import type { StageModule } from "./stages/types.js";
 import type { RunConfig, RunInput } from "./types.js";
 
-export const HARNESS_VERSION = "1.1.0";
+export const HARNESS_VERSION = "1.2.0";
 
 export type BuildRunConfigInput = {
   projectRoot: string;
@@ -15,6 +16,7 @@ export type BuildRunConfigInput = {
   input: RunInput;
   claimDecomposer: ClaimDecomposerSelection;
   evidenceMapper: EvidenceMapperSelection;
+  stages: StageModule[];
 };
 
 export async function buildRunConfig(options: BuildRunConfigInput): Promise<RunConfig> {
@@ -41,6 +43,17 @@ export async function buildRunConfig(options: BuildRunConfigInput): Promise<RunC
       claim_decomposer: options.claimDecomposer,
       evidence_mapper: options.evidenceMapper
     },
+    stages: options.stages.map((stage) => ({
+      stage: stage.stage,
+      module_id: stage.module_id,
+      module_version: stage.module_version,
+      kind: stage.kind,
+      ...(stage.prompt_version ? { prompt_version: stage.prompt_version } : {}),
+      ...(stage.provider ? { provider: stage.provider } : {}),
+      ...(stage.model ? { model: stage.model } : {}),
+      timeout_ms: stage.timeout_ms,
+      max_retries: stage.max_retries
+    })),
     prompts: {
       claim_decomposer: "claim-decomposer.v1",
       evidence_mapper: "evidence-mapper.v1"

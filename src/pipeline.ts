@@ -17,6 +17,9 @@ import { loadInput, slugFromInput } from "./input.js";
 import { createConfiguredLlmClient } from "./llm.js";
 import { buildRunConfig } from "./run-config.js";
 import { buildSourceChunks, buildSourceInventory } from "./sources.js";
+import { createStageModuleRegistry } from "./stages/registry.js";
+import { runStageModule } from "./stages/runtime.js";
+import { stageModuleMetadata, type StageModule } from "./stages/types.js";
 import { trace } from "./trace.js";
 import type { ClaimsArtifact, RunContext, SourceChunksArtifact, SourceInventory } from "./types.js";
 import { ArtifactValidator, schemaIds } from "./validator.js";
@@ -39,6 +42,14 @@ export async function runHarness(projectRoot: string, inputPath: string): Promis
   await writeText(path.join(runDir, "trace.jsonl"), "");
   const claimDecomposerSelection = selectClaimDecomposer({ env: process.env });
   const evidenceMapperSelection = selectEvidenceMapper({ env: process.env });
+  const llm = createConfiguredLlmClient();
+  const stageRegistry = createStageModuleRegistry({
+    claimDecomposer: claimDecomposerSelection,
+    evidenceMapper: evidenceMapperSelection,
+    llmConfigured: Boolean(llm),
+    provider: process.env.CRUX_LLM_PROVIDER,
+    model: process.env.CRUX_LLM_MODEL ?? "gpt-4.1-mini"
+  });
   const runConfig = await buildRunConfig({
     projectRoot,
     runId,
@@ -46,7 +57,8 @@ export async function runHarness(projectRoot: string, inputPath: string): Promis
     copiedInputPath,
     input,
     claimDecomposer: claimDecomposerSelection,
-    evidenceMapper: evidenceMapperSelection
+    evidenceMapper: evidenceMapperSelection,
+    stages: stageRegistry.modules
   });
   await validateOrThrow(validator, schemaIds.runConfig, runConfig);
   await writeJson(artifactPath(runDir, "run_config.json"), runConfig);
@@ -60,7 +72,7 @@ export async function runHarness(projectRoot: string, inputPath: string): Promis
   };
 
   try {
-    await runStage(context, "normalize_question", ["input.yaml"], ["question_spec.json"], async () => {
+    await runStage(context, stageRegistry.get("normalize_question"), ["input.yaml"], ["question_spec.json"], async () => {
       const artifact = buildQuestionSpec(input);
       await validateOrThrow(validator, schemaIds.questionSpec, artifact);
       await writeJson(artifactPath(runDir, "question_spec.json"), artifact);
@@ -81,9 +93,7 @@ export async function runHarness(projectRoot: string, inputPath: string): Promis
       chunks: []
     };
     let claimsArtifact: ClaimsArtifact = buildDeterministicClaims(input);
-    const llm = createConfiguredLlmClient();
-
-    await runStage(context, "ingest_sources", ["input.yaml"], ["source_inventory.json", "source_chunks.json"], async () => {
+    await runStage(context, stageRegistry.get("ingest_sources"), ["input.yaml"], ["source_inventory.json", "source_chunks.json"], async () => {
       sourceInventory = await buildSourceInventory(projectRoot, input);
       sourceChunks = await buildSourceChunks(projectRoot, sourceInventory);
       await validateOrThrow(validator, schemaIds.sourceInventory, sourceInventory);
@@ -92,8 +102,8 @@ export async function runHarness(projectRoot: string, inputPath: string): Promis
       await writeJson(artifactPath(runDir, "source_chunks.json"), sourceChunks);
     });
 
-    await runStage(context, "build_claim_graph", ["question_spec.json", "source_inventory.json", "source_chunks.json"], ["claims.json"], async () => {
-      const useLlmClaimDecomposer = runConfig.mappers.claim_decomposer.type === "llm" && llm;
+    await runStage(context, stageRegistry.get("build_claim_graph"), ["question_spec.json", "source_inventory.json", "source_chunks.json"], ["claims.json"], async () => {
+      const useLlmClaimDecomposer = stageRegistry.get("build_claim_graph").kind === "llm" && llm;
       claimsArtifact = useLlmClaimDecomposer
         ? await decomposeClaimsWithLlm({ input, llm, projectRoot })
         : buildDeterministicClaims(input);
@@ -115,9 +125,9 @@ export async function runHarness(projectRoot: string, inputPath: string): Promis
       await writeJson(artifactPath(runDir, "claims.json"), claimsArtifact);
     });
 
-    await runStage(context, "gather_evidence", ["claims.json", "source_inventory.json", "source_chunks.json"], ["evidence.json"], async () => {
+    await runStage(context, stageRegistry.get("gather_evidence"), ["claims.json", "source_inventory.json", "source_chunks.json"], ["evidence.json"], async () => {
       const mapperSelection = runConfig.mappers.evidence_mapper;
-      const useLlmEvidenceMapper = mapperSelection.type === "llm" && llm && sourceInventory.sources.length > 0;
+      const useLlmEvidenceMapper = stageRegistry.get("gather_evidence").kind === "llm" && llm && sourceInventory.sources.length > 0;
       const mapperReason = mapperSelection.type === "llm" && !llm
         ? "LLM client unavailable; used deterministic fallback."
         : mapperSelection.type === "llm" && sourceInventory.sources.length === 0
@@ -154,27 +164,27 @@ export async function runHarness(projectRoot: string, inputPath: string): Promis
       await writeJson(artifactPath(runDir, "evidence.json"), artifact);
     });
 
-    await runStage(context, "verify_claims", ["claims.json", "evidence.json"], ["contradictions.json"], async () => {
+    await runStage(context, stageRegistry.get("verify_claims"), ["claims.json", "evidence.json"], ["contradictions.json"], async () => {
       const artifact = buildContradictions(input);
       await validateOrThrow(validator, schemaIds.contradictions, artifact);
       await writeJson(artifactPath(runDir, "contradictions.json"), artifact);
     });
 
-    await runStage(context, "red_team", ["question_spec.json", "claims.json", "evidence.json", "contradictions.json"], ["red_team.md"], async () => {
+    await runStage(context, stageRegistry.get("red_team"), ["question_spec.json", "claims.json", "evidence.json", "contradictions.json"], ["red_team.md"], async () => {
       await writeText(artifactPath(runDir, "red_team.md"), buildRedTeam(input));
     });
 
-    await runStage(context, "model_uncertainty", ["claims.json", "evidence.json", "contradictions.json", "red_team.md"], ["uncertainty.json"], async () => {
+    await runStage(context, stageRegistry.get("model_uncertainty"), ["claims.json", "evidence.json", "contradictions.json", "red_team.md"], ["uncertainty.json"], async () => {
       const artifact = buildUncertainty(input);
       await validateOrThrow(validator, schemaIds.uncertainty, artifact);
       await writeJson(artifactPath(runDir, "uncertainty.json"), artifact);
     });
 
-    await runStage(context, "write_decision_memo", ["question_spec.json", "claims.json", "evidence.json", "contradictions.json", "red_team.md", "uncertainty.json"], ["decision_memo.md"], async () => {
+    await runStage(context, stageRegistry.get("write_decision_memo"), ["question_spec.json", "claims.json", "evidence.json", "contradictions.json", "red_team.md", "uncertainty.json"], ["decision_memo.md"], async () => {
       await writeText(artifactPath(runDir, "decision_memo.md"), buildDecisionMemo(input));
     });
 
-    await runStage(context, "evaluate", ["run_config.json", "question_spec.json", "source_inventory.json", "source_chunks.json", "claims.json", "evidence.json", "contradictions.json", "red_team.md", "uncertainty.json", "decision_memo.md"], ["eval_report.json"], async () => {
+    await runStage(context, stageRegistry.get("evaluate"), ["run_config.json", "question_spec.json", "source_inventory.json", "source_chunks.json", "claims.json", "evidence.json", "contradictions.json", "red_team.md", "uncertainty.json", "decision_memo.md"], ["eval_report.json"], async () => {
       const artifact = await evaluateRun(projectRoot, runDir);
       await validateOrThrow(validator, schemaIds.evalReport, artifact);
       await writeJson(artifactPath(runDir, "eval_report.json"), artifact);
@@ -210,29 +220,33 @@ export async function replayRun(projectRoot: string, runDir: string): Promise<Ru
 
 async function runStage(
   context: RunContext,
-  stage: string,
+  module: StageModule,
   inputArtifacts: string[],
   outputArtifacts: string[],
   work: () => Promise<void>
 ): Promise<void> {
   await trace(context.runDir, {
-    stage,
+    stage: module.stage,
     event_type: "start",
-    message: `Starting ${stage}`,
+    message: `Starting ${module.stage}`,
     input_artifacts: inputArtifacts,
     output_artifacts: outputArtifacts,
-    metadata: { runId: context.runId }
+    metadata: stageModuleMetadata(module, { runId: context.runId })
   });
 
-  await work();
+  const result = await runStageModule(module, work);
 
   await trace(context.runDir, {
-    stage,
+    stage: module.stage,
     event_type: "complete",
-    message: `Completed ${stage}`,
+    message: `Completed ${module.stage}`,
     input_artifacts: inputArtifacts,
     output_artifacts: outputArtifacts,
-    metadata: { runId: context.runId }
+    metadata: stageModuleMetadata(module, {
+      runId: context.runId,
+      attempts: result.attempts,
+      duration_ms: result.duration_ms
+    })
   });
 }
 

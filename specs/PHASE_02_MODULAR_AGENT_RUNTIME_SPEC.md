@@ -1,5 +1,7 @@
 # Phase 2 Spec: Modular Agent Runtime
 
+Status: started. The first implementation slice adds formal stage module metadata, deterministic module registry, LLM module selection metadata, runtime timeout/retry execution, run-config module recording, and trace metadata.
+
 ## Purpose
 
 Turn Crux stages into replaceable modules so deterministic and model-backed implementations can coexist behind the same artifact contracts.
