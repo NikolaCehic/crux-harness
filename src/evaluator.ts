@@ -11,6 +11,7 @@ import type {
   SourceInventory,
   UncertaintyArtifact
 } from "./types.js";
+import { buildEvalCouncil } from "./eval-council.js";
 import { ArtifactValidator, schemaIds } from "./validator.js";
 
 type LoadedRun = {
@@ -67,12 +68,18 @@ export async function evaluateRun(projectRoot: string, runDir: string): Promise<
 
   const findings = buildFindings(loaded, failedChecks, faithfulness.findings);
   const improvement_recommendations = buildRecommendations(loaded, failedChecks);
+  const council = buildEvalCouncil({
+    ...loaded,
+    scores,
+    failedChecks
+  });
 
   return {
     scores,
     findings,
     failed_checks: failedChecks,
-    improvement_recommendations
+    improvement_recommendations,
+    council
   };
 }
 

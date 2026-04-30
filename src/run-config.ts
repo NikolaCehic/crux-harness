@@ -7,7 +7,7 @@ import type { StageModule } from "./stages/types.js";
 import type { RunConfig, RunInput } from "./types.js";
 import { schemaIds } from "./validator.js";
 
-export const HARNESS_VERSION = "1.3.0";
+export const HARNESS_VERSION = "1.4.0";
 
 export type BuildRunConfigInput = {
   projectRoot: string;
@@ -78,16 +78,16 @@ function buildArtifactContract(): RunConfig["artifact_contract"] {
       artifact("red_team.md"),
       artifact("uncertainty.json", schemaIds.uncertainty),
       artifact("decision_memo.md"),
-      artifact("eval_report.json", schemaIds.evalReport),
+      artifact("eval_report.json", schemaIds.evalReport, "1.1.0"),
       artifact("trace.jsonl")
     ]
   };
 }
 
-function artifact(name: string, schemaId?: string): RunConfig["artifact_contract"]["artifacts"][number] {
+function artifact(name: string, schemaId?: string, version = "1.0.0"): RunConfig["artifact_contract"]["artifacts"][number] {
   return {
     name,
-    version: "1.0.0",
+    version,
     ...(schemaId ? { schema_id: schemaId } : {}),
     required: true
   };

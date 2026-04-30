@@ -1,5 +1,7 @@
 # Phase 4 Spec: Trust And Eval Engine
 
+Status: started. First implementation slice adds the deterministic evaluator council to `eval_report.json`, including specialist reviewers, preserved disagreements, and synthesis blocking-failure output.
+
 ## Purpose
 
 Make Crux diagnose whether an analysis run is trustworthy, not merely whether it produced valid files.

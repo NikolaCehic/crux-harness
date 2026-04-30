@@ -295,6 +295,7 @@ Required fields:
 - `findings`
 - `failed_checks`
 - `improvement_recommendations`
+- `council`
 
 Required score dimensions:
 
@@ -309,6 +310,24 @@ Required score dimensions:
 - `faithfulness`
 - `crux_quality`
 - `decision_usefulness`
+
+Required council fields:
+
+- `schema_version`
+- `reviewers`
+- `disagreements`
+- `synthesis`
+
+Required council reviewer roles:
+
+- `evidence_auditor`
+- `claim_graph_auditor`
+- `faithfulness_auditor`
+- `red_team_auditor`
+- `uncertainty_auditor`
+- `decision_utility_auditor`
+- `domain_reviewer`
+- `synthesis_judge`
 
 ## trace.jsonl
 

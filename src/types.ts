@@ -222,6 +222,50 @@ export type EvalReport = {
   findings: string[];
   failed_checks: string[];
   improvement_recommendations: string[];
+  council: EvalCouncilReport;
+};
+
+export type EvalCouncilStatus = "pass" | "warn" | "fail";
+
+export type EvalCouncilReview = {
+  role_id:
+    | "evidence_auditor"
+    | "claim_graph_auditor"
+    | "faithfulness_auditor"
+    | "red_team_auditor"
+    | "uncertainty_auditor"
+    | "decision_utility_auditor"
+    | "domain_reviewer"
+    | "synthesis_judge";
+  role_name: string;
+  status: EvalCouncilStatus;
+  score: number;
+  stage: string;
+  findings: string[];
+  blocking_failures: string[];
+  recommendations: string[];
+};
+
+export type EvalCouncilDisagreement = {
+  topic: string;
+  severity: "low" | "medium" | "high";
+  positions: Array<{
+    role_id: EvalCouncilReview["role_id"];
+    position: string;
+    status: EvalCouncilStatus;
+  }>;
+};
+
+export type EvalCouncilReport = {
+  schema_version: "crux.eval_council.v1";
+  reviewers: EvalCouncilReview[];
+  disagreements: EvalCouncilDisagreement[];
+  synthesis: {
+    status: EvalCouncilStatus;
+    confidence: number;
+    blocking_failures: string[];
+    next_fixes: string[];
+  };
 };
 
 export type TraceEvent = {

@@ -16,6 +16,7 @@ This v1 scope is the most optimal release boundary because it stabilizes the ful
 - All benchmark scenarios forbid placeholder evidence.
 - All benchmark scenarios require verified source excerpts.
 - The evaluator scores schema validity, claim graph integrity, claim coverage, evidence traceability, source quality, contradiction handling, red-team strength, uncertainty quality, faithfulness, crux quality, and decision usefulness.
+- The evaluator report includes a council with specialist reviewers, preserved disagreements, and synthesis blocking failures.
 - `crux inspect <run>` gives a compact summary of a run.
 - CI runs tests and benchmark gates.
 

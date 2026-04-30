@@ -19,6 +19,7 @@ Use this checklist before tagging a Crux release.
 - Source-pack runs contain no placeholder evidence.
 - Every non-calculation source-backed evidence item has `source_ids`, `chunk_ids`, and an excerpt verified against `source_chunks.json`.
 - `eval_report.json` includes `claim_graph_integrity`, `faithfulness`, and `crux_quality`.
+- `eval_report.json` includes council reviewers, preserved disagreements, and synthesis status.
 
 ## Documentation
 

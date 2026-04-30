@@ -19,6 +19,9 @@ export async function inspectRun(projectRoot: string, runDir: string): Promise<s
   const scoreLines = Object.entries(evalReport.scores)
     .map(([name, value]) => `  ${name}: ${value}`)
     .join("\n");
+  const councilReviewLines = evalReport.council.reviewers
+    .map((reviewer) => `  ${reviewer.role_id}: ${reviewer.status} (${reviewer.score})`)
+    .join("\n");
 
   return [
     `Crux Run: ${path.relative(projectRoot, absoluteRunDir)}`,
@@ -32,6 +35,9 @@ export async function inspectRun(projectRoot: string, runDir: string): Promise<s
     `Source chunks: ${sourceChunks.chunks.length}`,
     "Scores:",
     scoreLines,
+    `Council: ${evalReport.council.synthesis.status} (${evalReport.council.synthesis.confidence})`,
+    "Council reviewers:",
+    councilReviewLines,
     ...(integrity.failures.length > 0 ? ["Failures:", ...integrity.failures.map((failure) => `  - ${failure}`)] : [])
   ].join("\n");
 }

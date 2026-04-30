@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.0 - 2026-04-30
+
+- Added a deterministic evaluator council to `eval_report.json`.
+- Added specialist reviewer outputs for evidence, claim graph quality, faithfulness, red-team strength, uncertainty, decision utility, domain fit, and synthesis.
+- Added council disagreement preservation and synthesis blocking-failure reporting.
+- Added council schema validation, tests for weak red-team disagreement, and inspect output for council status.
+
 ## 1.3.0 - 2026-04-30
 
 - Added artifact contract metadata to `run_config.json`.

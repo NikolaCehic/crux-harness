@@ -10,6 +10,7 @@ import type {
   SourceInventory,
   UncertaintyArtifact
 } from "./types.js";
+import { buildEvalCouncil } from "./eval-council.js";
 import { mapSourceGroundedEvidence } from "./evidence-mapper.js";
 
 type ScopeProfile = {
@@ -314,31 +315,36 @@ The largest uncertainty is whether ${profile.cruxCondition}. The second major un
 }
 
 export function buildInitialEvalReport(): EvalReport {
+  const scores: EvalReport["scores"] = {
+    schema_validity: 1,
+    claim_graph_integrity: 1,
+    claim_coverage: 0.82,
+    evidence_traceability: 0.76,
+    source_quality: 0.42,
+    contradiction_handling: 0.8,
+    red_team_strength: 0.78,
+    uncertainty_quality: 0.84,
+    faithfulness: 0.8,
+    crux_quality: 0.78,
+    decision_usefulness: 0.86
+  };
+  const findings = [
+    "The run produced the required artifact shape and a complete deterministic reasoning path.",
+    "Source quality is intentionally limited because v0.1 uses offline placeholder evidence.",
+    "The recommendation is conditional and exposes what would change the decision."
+  ];
+  const failedChecks: string[] = [];
+
   return {
-    scores: {
-      schema_validity: 1,
-      claim_graph_integrity: 1,
-      claim_coverage: 0.82,
-      evidence_traceability: 0.76,
-      source_quality: 0.42,
-      contradiction_handling: 0.8,
-      red_team_strength: 0.78,
-      uncertainty_quality: 0.84,
-      faithfulness: 0.8,
-      crux_quality: 0.78,
-      decision_usefulness: 0.86
-    },
-    findings: [
-      "The run produced the required artifact shape and a complete deterministic reasoning path.",
-      "Source quality is intentionally limited because v0.1 uses offline placeholder evidence.",
-      "The recommendation is conditional and exposes what would change the decision."
-    ],
-    failed_checks: [],
+    scores,
+    findings,
+    failed_checks: failedChecks,
     improvement_recommendations: [
       "Replace placeholder evidence with live web research and uploaded source documents.",
       "Add evaluator checks that compare memo claims against claim IDs.",
       "Add golden benchmark tasks before tuning agent prompts."
-    ]
+    ],
+    council: buildEvalCouncil({ scores, failedChecks })
   };
 }
 

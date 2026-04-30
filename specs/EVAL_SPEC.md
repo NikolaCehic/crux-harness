@@ -120,7 +120,18 @@ Whether the final memo helps a user make or defer a decision.
   },
   "findings": [],
   "failed_checks": [],
-  "improvement_recommendations": []
+  "improvement_recommendations": [],
+  "council": {
+    "schema_version": "crux.eval_council.v1",
+    "reviewers": [],
+    "disagreements": [],
+    "synthesis": {
+      "status": "pass",
+      "confidence": 1.0,
+      "blocking_failures": [],
+      "next_fixes": []
+    }
+  }
 }
 ```
 
