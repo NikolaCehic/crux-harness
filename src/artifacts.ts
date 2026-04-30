@@ -88,7 +88,7 @@ export function buildClaims(input: RunInput): ClaimsArtifact {
     claim("C9", `${profile.validationTest} is the fastest practical way to reduce decision uncertainty.`, "causal", "supported", 0.76, 0.75, ["C2", "C5"], ["E6", "E8"], [], "The test attacks the highest-value unknowns directly."),
     claim("C10", `The decision should defer full commitment until ${profile.validationTest.toLowerCase()} produces clear evidence.`, "decision", "supported", 0.86, 0.7, ["C6", "C9"], ["E6", "E8"], [], "This converts the analysis into a staged decision."),
     claim("C11", `If ${profile.externalPressure}, the standalone case for ${profile.subject} becomes weaker.`, "predictive", "weakly_supported", 0.74, 0.62, ["C4"], ["E4", "E5"], [], "External pressure is probable but its impact must be scoped."),
-    claim("C12", `${profile.subject} is attractive only if ${profile.cruxCondition}.`, "decision", "contested", 0.9, 0.6, ["C2", "C3", "C4", "C5", "C7"], ["E3", "E7", "E8"], ["E5"], "This is the practical crux of the decision.")
+    claim("C12", cruxClaim(profile), "decision", "contested", 0.9, 0.6, ["C2", "C3", "C4", "C5", "C7"], ["E3", "E7", "E8"], ["E5"], "This is the practical crux of the decision.")
   ];
 
   return {
@@ -268,7 +268,7 @@ ${profile.stagedRecommendation}
 
 ## Executive Summary
 
-The current analysis supports a conditional, staged approach to ${profile.subject}. The opportunity is plausible: ${profile.opportunity} The risk is also material: ${profile.primaryRisk} The best next move is not a full commitment. It is to run ${profile.validationTest.toLowerCase()} and use the result to update the decision.
+The current analysis supports a conditional, staged approach to ${profile.subject}. The opportunity is plausible: ${profile.opportunity} The risk is also material: ${profile.primaryRisk} The best next move is not a full commitment. The next test is: ${lowercaseFirst(trimSentence(profile.validationTest))}.
 
 ## Core Reasoning
 
@@ -281,7 +281,7 @@ The decision depends on whether ${profile.cruxCondition} within the ${input.time
 - ${profile.primaryRisk}
 - ${profile.executionRisk}
 - ${profile.adoptionBlocker}
-- ${profile.subject} is attractive only if ${profile.cruxCondition}.
+- ${cruxClaim(profile)}
 
 ## Evidence Quality
 
@@ -295,13 +295,13 @@ The strongest objection is: ${profile.redTeamThesis} This weakens any immediate 
 
 Overall confidence: 0.62.
 
-The largest uncertainty is whether ${profile.cruxCondition}. The second major uncertainty is whether ${profile.executionRisk.toLowerCase()}.
+The largest uncertainty is whether ${trimSentence(profile.cruxCondition)}. The second major uncertainty is whether ${lowercaseFirst(trimSentence(profile.executionRisk))}.
 
 ## What Would Change This Decision
 
-- Strong evidence from ${profile.validationTest.toLowerCase()} would strengthen the case to proceed.
-- Evidence that ${profile.primaryRisk.toLowerCase()} is severe would weaken the case.
-- Evidence that ${profile.externalPressure.toLowerCase()} is decisive would weaken the case.
+- Strong evidence from ${lowercaseFirst(trimSentence(profile.validationTest))} would strengthen the case to proceed.
+- Evidence that ${lowercaseFirst(trimSentence(profile.primaryRisk))} is severe would weaken the case.
+- Evidence that ${lowercaseFirst(trimSentence(profile.externalPressure))} is decisive would weaken the case.
 - Evidence that the crux condition is repeatable would support expansion.
 
 ## Next Tests
@@ -312,6 +312,22 @@ The largest uncertainty is whether ${profile.cruxCondition}. The second major un
 4. Identify the fastest test that could falsify the recommendation.
 5. Re-run Crux after the validation cycle.
 `;
+}
+
+function cruxClaim(profile: ScopeProfile): string {
+  return `${capitalizeFirst(profile.subject)} is only actionable if ${trimSentence(profile.cruxCondition)}.`;
+}
+
+function trimSentence(value: string): string {
+  return value.trim().replace(/[.!?]+$/g, "");
+}
+
+function lowercaseFirst(value: string): string {
+  return value ? `${value[0].toLowerCase()}${value.slice(1)}` : value;
+}
+
+function capitalizeFirst(value: string): string {
+  return value ? `${value[0].toUpperCase()}${value.slice(1)}` : value;
 }
 
 export function buildInitialEvalReport(): EvalReport {
@@ -378,21 +394,21 @@ function buildGenericProfile(input: RunInput, scope: string): ScopeProfile {
     decisionType: "scope-agnostic analysis",
     owner: "user or accountable decision maker",
     subject,
-    opportunity: `There may be a practical opportunity to improve the outcome around ${subject}, but the relevant evidence must be made explicit.`,
-    differentiator: `A useful answer for ${subject} depends on separating decision criteria, constraints, and evidence instead of relying on generic advice.`,
-    primaryRisk: `The analysis may overfit to the wording of the query if the actual constraints around ${subject} are missing.`,
-    executionRisk: `The recommended path for ${subject} may fail if owners, resources, time horizon, or operational constraints are unclear.`,
-    adoptionBlocker: `Stakeholder incentives, implementation friction, and missing source material may block progress on ${subject}.`,
-    validationTest: `Collect the smallest set of source-backed evidence that would change the recommendation for ${subject}`,
-    externalPressure: `external constraints or new evidence change the best path for ${subject}`,
-    cruxCondition: `the user can identify the decision criteria, constraints, and evidence needed for ${subject}`,
-    stagedRecommendation: `Do not treat the first answer as final; use a staged analysis of ${subject} that makes assumptions and evidence gaps explicit.`,
-    redTeamThesis: `The user should not act on a generic answer about ${subject} until the harness has surfaced assumptions, missing evidence, and decision criteria.`,
+    opportunity: `There may be a practical path for ${subject}, but the recommendation needs explicit objectives, constraints, and evidence.`,
+    differentiator: "The analysis is useful only if it compares concrete options against the user's actual constraints instead of giving generic advice.",
+    primaryRisk: "The answer may be misleading if it ignores missing context, constraints, or source evidence.",
+    executionRisk: "The recommended path may fail if owners, resources, timing, or operational limits are unclear.",
+    adoptionBlocker: "Missing evidence, unclear decision criteria, and stakeholder constraints may block progress.",
+    validationTest: `Gather the minimum evidence needed to compare the top options for ${subject}`,
+    externalPressure: "new constraints or better evidence change the best path",
+    cruxCondition: "the decision criteria, constraints, and evidence are clear enough to choose a next step",
+    stagedRecommendation: `Use a staged approach to ${subject}: clarify criteria, compare the top options, and run the smallest test before committing.`,
+    redTeamThesis: `The user should not act on a generic answer about ${subject} until assumptions, missing evidence, and decision criteria are visible.`,
     requiredEvidence: [
       `Authoritative context and constraints for ${subject}.`,
-      `Current evidence or data that supports the central claim about ${subject}.`,
-      `Counterevidence or failure cases that would weaken the recommendation about ${subject}.`,
-      `A clear decision owner, time horizon, and action threshold for ${subject}.`
+      "Current evidence or data that supports the central claim.",
+      "Counterevidence or failure cases that would weaken the recommendation.",
+      "A clear decision owner, time horizon, and action threshold."
     ]
   };
 }
@@ -406,11 +422,44 @@ function extractGenericSubject(question: string): string {
   const stripped = normalized
     .replace(/^(should|could|can|would)\s+(we|i|our team|the team)\s+/i, "")
     .replace(/^how should\s+/i, "")
+    .replace(/^(i|we|our team|the team|a team|a [a-z -]+ team)\s+/i, "")
     .replace(/^what should\s+(we|i|our team|the team)\s+do\s+(about|with)?\s*/i, "")
     .replace(/^why\s+(is|are|did|does)\s+/i, "")
     .trim();
 
-  return stripped || "the arbitrary user question";
+  return nominalizeLeadingVerb(stripped) || "the arbitrary user question";
+}
+
+function nominalizeLeadingVerb(value: string): string {
+  const words = value.split(" ").filter(Boolean);
+  const [firstWord = "", ...rest] = words;
+  const irregular: Record<string, string> = {
+    triage: "triaging",
+    reduce: "reducing",
+    replace: "replacing",
+    automate: "automating",
+    choose: "choosing",
+    improve: "improving",
+    invest: "investing",
+    build: "building",
+    buy: "buying",
+    hire: "hiring",
+    stop: "stopping",
+    continue: "continuing",
+    adopt: "adopting",
+    fix: "fixing"
+  };
+  const gerund = irregular[firstWord] ?? "";
+  if (gerund) {
+    return [gerund, ...rest].join(" ");
+  }
+
+  const verbIndex = words.findIndex((word) => irregular[word]);
+  if (verbIndex > 0) {
+    return [irregular[words[verbIndex]], ...words.slice(verbIndex + 1)].join(" ");
+  }
+
+  return value;
 }
 
 function buildProfiles(): Record<string, ScopeProfile> {

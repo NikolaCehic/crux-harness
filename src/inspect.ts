@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { validateRunIntegrity } from "./integrity.js";
-import type { ClaimsArtifact, EvalReport, EvidenceArtifact, RunConfig, SourceChunksArtifact, SourceInventory } from "./types.js";
+import type { ClaimsArtifact, EvalReport, EvidenceArtifact, QueryIntakeArtifact, RunConfig, SourceChunksArtifact, SourceInventory } from "./types.js";
 
 export async function inspectRun(projectRoot: string, runDir: string): Promise<string> {
   const absoluteRunDir = path.resolve(projectRoot, runDir);
@@ -16,6 +16,7 @@ export async function inspectRun(projectRoot: string, runDir: string): Promise<s
   ]);
 
   const scenario = path.basename(runConfig.input.path).replace(/\.(yaml|yml)$/i, "");
+  const queryIntake = await readOptionalJson<QueryIntakeArtifact>(absoluteRunDir, "query_intake.json");
   const scoreLines = Object.entries(evalReport.scores)
     .map(([name, value]) => `  ${name}: ${value}`)
     .join("\n");
@@ -25,7 +26,14 @@ export async function inspectRun(projectRoot: string, runDir: string): Promise<s
 
   return [
     `Crux Run: ${path.relative(projectRoot, absoluteRunDir)}`,
-    `Scenario: ${scenario}`,
+    ...(queryIntake
+      ? [
+          `Question: ${queryIntake.original_query}`,
+          `Scope: ${queryIntake.analysis_scope}`,
+          `Intent: ${queryIntake.intent}`,
+          `Answerability: ${queryIntake.answerability}`
+        ]
+      : [`Scenario: ${scenario}`]),
     `Harness: ${runConfig.harness_version}`,
     `Source policy: ${runConfig.source_policy}`,
     `Integrity: ${integrity.valid ? "pass" : "fail"}`,
@@ -49,4 +57,12 @@ export async function inspectRun(projectRoot: string, runDir: string): Promise<s
 
 async function readJson<T>(runDir: string, file: string): Promise<T> {
   return JSON.parse(await readFile(path.join(runDir, file), "utf8")) as T;
+}
+
+async function readOptionalJson<T>(runDir: string, file: string): Promise<T | undefined> {
+  try {
+    return await readJson<T>(runDir, file);
+  } catch {
+    return undefined;
+  }
 }

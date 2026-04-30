@@ -7,6 +7,7 @@ import { promisify } from "node:util";
 import test from "node:test";
 import { buildRunInputFromQuery, runQuery } from "../src/query-intake.js";
 import { buildQuestionSpec } from "../src/artifacts.js";
+import { inspectRun } from "../src/inspect.js";
 import { validateRunIntegrity } from "../src/integrity.js";
 
 const execFileAsync = promisify(execFile);
@@ -63,7 +64,7 @@ test("unknown scopes use generic question behavior instead of a vertical fallbac
   assert.equal(spec.decision_owner, "user or accountable decision maker");
   assert.equal(spec.context.includes("lab operations"), true);
   assert.equal(spec.constraints.some((constraint) => constraint.includes("custom-biotech-operations")), true);
-  assert.equal(spec.unknowns.some((unknown) => unknown.includes("sample contamination")), true);
+  assert.equal(spec.success_criteria.some((criterion) => criterion.includes("reducing sample contamination")), true);
 });
 
 test("runQuery creates a complete audited run with query_intake.json", async () => {
@@ -85,6 +86,11 @@ test("runQuery creates a complete audited run with query_intake.json", async () 
   const integrity = await validateRunIntegrity(projectRoot, result.runDir);
   assert.deepEqual(integrity.failures, []);
   assert.equal(integrity.valid, true);
+
+  const inspection = await inspectRun(projectRoot, result.runDir);
+  assert.match(inspection, /Question: How should a support team triage a sudden spike in refund requests\?/);
+  assert.match(inspection, /Scope: general-analysis/);
+  assert.doesNotMatch(inspection, /Scenario: 20[0-9]{6}T[0-9]{6}Z-/);
 });
 
 test("compiled CLI accepts raw arbitrary queries", async () => {
@@ -123,6 +129,11 @@ test("compiled CLI ask command is the first-class arbitrary-question workflow", 
   assert.match(stdout, /Query intake:/);
   assert.match(stdout, /Decision memo:/);
   assert.match(stdout, /HTML report:/);
+  assert.match(stdout, /Trust gate:/);
+  assert.match(stdout, /Memo preview:/);
+  assert.match(stdout, /## Recommendation/);
+  assert.doesNotMatch(stdout, /run gather/i);
+  assert.doesNotMatch(stdout, /is attractive only if/i);
   assert.match(stdout, /Open the memo:/);
   const runMatch = stdout.match(/Query run complete: (.+)/);
   assert.ok(runMatch, "ask command should print the run directory");

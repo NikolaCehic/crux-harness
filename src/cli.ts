@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { createInterface } from "node:readline/promises";
 import { Command } from "commander";
@@ -13,6 +14,7 @@ import { runQuery, type QueryRunOptions, type QueryRunResult } from "./query-int
 import { addClaimReview, addEvidenceAnnotation, exportReviewedMemo, initReview } from "./review.js";
 import { writeRunReport } from "./run-report.js";
 import { importSources } from "./source-importer.js";
+import type { EvalReport } from "./types.js";
 
 const program = new Command();
 
@@ -322,26 +324,50 @@ program.parseAsync().catch((error: unknown) => {
 async function runAndPrintQuery(question: string, options: QueryRunOptions): Promise<void> {
   const result = await runQuery(process.cwd(), question, options);
   const reportPath = await writeRunReport(process.cwd(), result.runDir);
-  printQueryRunSummary(result, reportPath);
+  const [memo, evalReport] = await Promise.all([
+    readFile(path.join(result.runDir, "decision_memo.md"), "utf8"),
+    readJson<EvalReport>(path.join(result.runDir, "eval_report.json"))
+  ]);
+  printQueryRunSummary(result, reportPath, memo, evalReport);
 }
 
-function printQueryRunSummary(result: QueryRunResult, reportPath: string): void {
+function printQueryRunSummary(result: QueryRunResult, reportPath: string, memo: string, evalReport: EvalReport): void {
   const runDir = path.relative(process.cwd(), result.runDir);
   const generatedInput = path.relative(process.cwd(), result.generatedInputPath);
   const queryIntake = path.join(runDir, "query_intake.json");
   const decisionMemo = path.join(runDir, "decision_memo.md");
+  const blockingFailures = evalReport.council.synthesis.blocking_failures;
 
   console.log(`Query run complete: ${runDir}`);
   console.log(`Generated input: ${generatedInput}`);
   console.log(`Query intake: ${queryIntake}`);
   console.log(`Decision memo: ${decisionMemo}`);
   console.log(`HTML report: ${reportPath}`);
+  console.log(`Trust gate: ${evalReport.council.synthesis.status} (${evalReport.council.synthesis.confidence})`);
+  for (const failure of blockingFailures) {
+    console.log(`Blocking issue: ${failure}`);
+  }
   console.log(`Intent: ${result.intake.intent}`);
   console.log(`Scope: ${result.intake.analysis_scope}`);
   console.log(`Answerability: ${result.intake.answerability}`);
   console.log(`Risk: ${result.intake.risk_level}`);
+  console.log("");
+  console.log("Memo preview:");
+  console.log(excerptMemo(memo));
+  console.log("");
   console.log(`Open the memo: sed -n '1,220p' ${decisionMemo}`);
   console.log(`Inspect the run: npm run crux -- inspect ${runDir}`);
+}
+
+async function readJson<T>(filePath: string): Promise<T> {
+  return JSON.parse(await readFile(filePath, "utf8")) as T;
+}
+
+function excerptMemo(memo: string): string {
+  const lines = memo.trim().split("\n");
+  const nextTestsIndex = lines.findIndex((line) => line.trim() === "## Next Tests");
+  const end = nextTestsIndex >= 0 ? Math.min(lines.length, nextTestsIndex + 7) : Math.min(lines.length, 80);
+  return lines.slice(0, end).join("\n");
 }
 
 async function promptForQuestion(): Promise<string> {
