@@ -50,3 +50,40 @@ The initial benchmark input is:
 
 - [examples/frontier-agent-platform.yaml](examples/frontier-agent-platform.yaml)
 
+## Development
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Run the example:
+
+```bash
+npm run crux -- run examples/frontier-agent-platform.yaml
+```
+
+Evaluate an existing run:
+
+```bash
+npm run crux -- eval runs/latest
+```
+
+Replay an existing run:
+
+```bash
+npm run crux -- replay runs/latest
+```
+
+Run tests:
+
+```bash
+npm test
+```
+
+## Current Implementation
+
+Crux v0.1 is a deterministic harness. It generates complete placeholder artifacts that satisfy the run contract, then evaluates them.
+
+The placeholder evidence is deliberately marked as limited. This version proves the harness shape before live research, model calls, and stronger evaluators are added.

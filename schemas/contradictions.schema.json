@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crux.local/schemas/contradictions.schema.json",
+  "title": "Contradictions",
+  "type": "object",
+  "required": ["contradictions", "unsupported_critical_claims", "missing_evidence"],
+  "properties": {
+    "contradictions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "claim_ids", "description", "severity", "resolution_status", "next_step"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^K[0-9]+$" },
+          "claim_ids": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^C[0-9]+$" }
+          },
+          "description": { "type": "string", "minLength": 1 },
+          "severity": { "type": "string", "enum": ["low", "medium", "high"] },
+          "resolution_status": {
+            "type": "string",
+            "enum": ["unresolved", "partially_resolved", "resolved"]
+          },
+          "next_step": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "unsupported_critical_claims": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^C[0-9]+$" }
+    },
+    "missing_evidence": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "additionalProperties": false
+}
+
