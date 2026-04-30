@@ -1,5 +1,7 @@
 # Phase 6 Spec: Human Review Workflow
 
+Status: started. First implementation slice adds schema-validated `review.json`, claim review actions, evidence annotations, trace events, and reviewed memo export.
+
 ## Purpose
 
 Make human review a structured part of Crux rather than leaving corrections in ad hoc comments or external documents.

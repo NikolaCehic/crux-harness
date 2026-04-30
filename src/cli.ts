@@ -5,6 +5,7 @@ import { runBenchmark, writeBenchmarkReport } from "./benchmark.js";
 import { checkReplayCompatibility, compareRuns, formatReplayCompatibility, formatRunComparison } from "./contracts.js";
 import { inspectRun } from "./inspect.js";
 import { replayRun, rerunEvaluation, runHarness } from "./pipeline.js";
+import { addClaimReview, addEvidenceAnnotation, exportReviewedMemo, initReview } from "./review.js";
 import { writeRunReport } from "./run-report.js";
 import { importSources } from "./source-importer.js";
 
@@ -13,7 +14,7 @@ const program = new Command();
 program
   .name("crux")
   .description("Spec-driven harness for decision-grade analysis agents.")
-  .version("1.5.0");
+  .version("1.6.0");
 
 program
   .command("run")
@@ -80,6 +81,67 @@ program
   .action(async (runDir: string, options: { out?: string }) => {
     const reportPath = await writeRunReport(process.cwd(), runDir, options.out);
     console.log(`Report written: ${reportPath}`);
+  });
+
+const review = program
+  .command("review")
+  .description("Human review utilities for a Crux run");
+
+review
+  .command("init")
+  .argument("<runDir>", "Path to a run directory")
+  .description("Create review.json if it does not exist")
+  .action(async (runDir: string) => {
+    await initReview(process.cwd(), runDir);
+    console.log(`Review initialized: ${path.join(runDir, "review.json")}`);
+  });
+
+review
+  .command("claim")
+  .argument("<runDir>", "Path to a run directory")
+  .argument("<claimId>", "Claim ID to review")
+  .requiredOption("--status <status>", "approved or rejected")
+  .requiredOption("--reviewer <name>", "Reviewer name")
+  .requiredOption("--rationale <text>", "Review rationale")
+  .description("Approve or reject a claim")
+  .action(async (runDir: string, claimId: string, options: { status: string; reviewer: string; rationale: string }) => {
+    if (options.status !== "approved" && options.status !== "rejected") {
+      throw new Error("--status must be approved or rejected");
+    }
+
+    const action = await addClaimReview(process.cwd(), runDir, {
+      claimId,
+      status: options.status,
+      reviewer: options.reviewer,
+      rationale: options.rationale
+    });
+    console.log(`Review action recorded: ${action.id}`);
+  });
+
+review
+  .command("evidence")
+  .argument("<runDir>", "Path to a run directory")
+  .argument("<evidenceId>", "Evidence ID to annotate")
+  .requiredOption("--reviewer <name>", "Reviewer name")
+  .requiredOption("--note <text>", "Evidence note")
+  .description("Annotate an evidence item")
+  .action(async (runDir: string, evidenceId: string, options: { reviewer: string; note: string }) => {
+    const action = await addEvidenceAnnotation(process.cwd(), runDir, {
+      evidenceId,
+      reviewer: options.reviewer,
+      note: options.note
+    });
+    console.log(`Review action recorded: ${action.id}`);
+  });
+
+review
+  .command("export")
+  .argument("<runDir>", "Path to a run directory")
+  .option("--out <file>", "Reviewed memo path. Defaults to <runDir>/reviewed_memo.md")
+  .description("Export a reviewed memo that preserves human review context")
+  .action(async (runDir: string, options: { out?: string }) => {
+    const output = await exportReviewedMemo(process.cwd(), runDir, options.out);
+    console.log(`Reviewed memo written: ${output}`);
   });
 
 const sources = program

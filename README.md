@@ -99,6 +99,14 @@ Write a static HTML run inspector:
 npm run crux -- report runs/latest --out runs/latest/run_report.html
 ```
 
+Record human review:
+
+```bash
+npm run crux -- review claim runs/latest C2 --status rejected --reviewer analyst --rationale "Needs stronger evidence."
+npm run crux -- review evidence runs/latest E1 --reviewer analyst --note "Useful direction, limited proof."
+npm run crux -- review export runs/latest --out reviewed_memo.md
+```
+
 Compare two runs:
 
 ```bash
@@ -168,6 +176,8 @@ The evaluator includes schema validity, claim graph integrity, claim coverage, e
 Eval reports include structured diagnostics with stage, severity, category, message, and recommended fix fields so users can see whether a failure came from evidence gathering, claim graph construction, memo writing, uncertainty modeling, red teaming, or evaluation itself.
 
 Crux can also write a static HTML run inspector with `crux report <runDir>`. The report links the decision memo, root claims, claim graph, evidence, source excerpts, contradictions, uncertainty, eval council, diagnostics, and trace timeline without requiring a hosted app.
+
+Human review is captured in `review.json` as a sidecar artifact. Reviewers can approve or reject claims, annotate evidence, and export a reviewed memo that clearly separates human review from the original machine-generated memo.
 
 Crux includes optional LLM claim and evidence mappers behind the same validation boundary. Deterministic mapping remains the default. To opt in manually, set:
 

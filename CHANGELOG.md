@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.6.0 - 2026-04-30
+
+- Added `review.json` as a schema-validated human review sidecar artifact.
+- Added review commands for initializing review state, approving or rejecting claims, annotating evidence, and exporting reviewed memos.
+- Added trace events for review actions so human corrections remain auditable.
+- Added reviewed memo export that separates human review summary from the machine-generated memo.
+
 ## 1.5.0 - 2026-04-30
 
 - Added a run artifact bundle loader for visual inspection surfaces.

@@ -288,6 +288,36 @@ export type TraceEvent = {
   metadata: Record<string, unknown>;
 };
 
+export type ReviewArtifact = {
+  schema_version: "crux.review.v1";
+  run_id: string;
+  created_at: string;
+  updated_at: string;
+  actions: ReviewAction[];
+  summary: {
+    approved_claims: string[];
+    rejected_claims: string[];
+    evidence_annotations: Array<{
+      evidence_id: string;
+      note_count: number;
+    }>;
+    stage_rerun_requests: string[];
+  };
+};
+
+export type ReviewAction = {
+  id: string;
+  created_at: string;
+  reviewer: string;
+  action_type: "approve_claim" | "reject_claim" | "annotate_evidence" | "request_stage_rerun";
+  target: {
+    type: "claim" | "evidence" | "stage";
+    id: string;
+  };
+  rationale: string;
+  metadata: Record<string, unknown>;
+};
+
 export type RunContext = {
   projectRoot: string;
   runDir: string;

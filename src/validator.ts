@@ -57,5 +57,6 @@ export const schemaIds = {
   evidence: "https://crux.local/schemas/evidence.schema.json",
   contradictions: "https://crux.local/schemas/contradictions.schema.json",
   uncertainty: "https://crux.local/schemas/uncertainty.schema.json",
-  evalReport: "https://crux.local/schemas/eval_report.schema.json"
+  evalReport: "https://crux.local/schemas/eval_report.schema.json",
+  review: "https://crux.local/schemas/review.schema.json"
 } as const;

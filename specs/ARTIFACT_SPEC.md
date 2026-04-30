@@ -32,6 +32,16 @@ eval_report.json
 trace.jsonl
 ```
 
+Optional sidecar files:
+
+```text
+review.json
+reviewed_memo.md
+run_report.html
+```
+
+Sidecars must preserve the original machine run. They may add review, export, or inspection views, but they must not replace the core artifacts.
+
 ## input.yaml
 
 The user-authored input file.
@@ -352,3 +362,29 @@ Each line is one JSON object with:
 - `input_artifacts`
 - `output_artifacts`
 - `metadata`
+
+## review.json
+
+Optional human review sidecar.
+
+Required fields:
+
+- `schema_version`
+- `run_id`
+- `created_at`
+- `updated_at`
+- `actions`
+- `summary`
+
+Supported action types:
+
+- `approve_claim`
+- `reject_claim`
+- `annotate_evidence`
+- `request_stage_rerun`
+
+Review actions must also be appended to `trace.jsonl` with stage `human_review`.
+
+## reviewed_memo.md
+
+Optional export that combines human review summary with the original machine-generated memo.
