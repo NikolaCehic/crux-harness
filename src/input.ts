@@ -22,7 +22,7 @@ export async function loadInput(inputPath: string): Promise<RunInput> {
 
 export function slugFromInput(inputPath: string, question: string): string {
   const base = path.basename(inputPath).replace(/\.[^.]+$/, "");
-  const text = base || question;
+  const text = isGeneratedQueryInput(inputPath, base) ? question : base || question;
   const slug = text
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
@@ -32,3 +32,6 @@ export function slugFromInput(inputPath: string, question: string): string {
   return slug || "analysis";
 }
 
+function isGeneratedQueryInput(inputPath: string, base: string): boolean {
+  return path.basename(path.dirname(inputPath)) === "query-inputs" || /^\d{8}T\d{6}Z-/.test(base);
+}

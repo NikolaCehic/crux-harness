@@ -96,9 +96,17 @@ npm install
 Run an arbitrary query:
 
 ```bash
-npm run crux -- query "Should our operations team automate invoice approvals this quarter?" \
+npm run crux -- ask "Should our operations team automate invoice approvals this quarter?" \
   --context "A finance operations lead is choosing the next automation target." \
   --time-horizon "90 days"
+```
+
+Install the `crux` command on your machine:
+
+```bash
+npm run build
+npm link
+crux ask "How should a support team triage a sudden spike in refund requests?"
 ```
 
 Run a structured scenario:
@@ -130,7 +138,7 @@ npm run release:verify
 Crux can start from a raw question instead of a prewritten YAML file:
 
 ```bash
-npm run crux -- query "How should a support team triage a sudden spike in refund requests?"
+npm run crux -- ask "How should a support team triage a sudden spike in refund requests?"
 ```
 
 The query intake layer writes `query_intake.json` and records:
@@ -172,10 +180,16 @@ This makes Crux suitable for agent workflows where analysis quality, auditabilit
 
 ## CLI
 
-Run a query:
+Ask an arbitrary question:
 
 ```bash
-npm run crux -- query "Should we replace our internal support search with a long-context model next quarter?"
+npm run crux -- ask "Should we replace our internal support search with a long-context model next quarter?"
+```
+
+Or, after `npm link`:
+
+```bash
+crux ask "Should we replace our internal support search with a long-context model next quarter?"
 ```
 
 Run from YAML:

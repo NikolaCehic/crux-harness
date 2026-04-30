@@ -102,3 +102,32 @@ test("compiled CLI accepts raw arbitrary queries", async () => {
   const runDir = runMatch[1].trim();
   assert.equal(existsSync(path.join(projectRoot, runDir, "query_intake.json")), true);
 });
+
+test("compiled CLI ask command is the first-class arbitrary-question workflow", async () => {
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    [
+      cliPath,
+      "ask",
+      "How should a facilities team reduce meeting-room overbooking without adding office space?",
+      "--context",
+      "A workplace operations lead needs a practical plan.",
+      "--time-horizon",
+      "30 days"
+    ],
+    { cwd: projectRoot, env: deterministicEnv }
+  );
+
+  assert.match(stdout, /Query run complete:/);
+  assert.match(stdout, /Generated input:/);
+  assert.match(stdout, /Query intake:/);
+  assert.match(stdout, /Decision memo:/);
+  assert.match(stdout, /HTML report:/);
+  assert.match(stdout, /Open the memo:/);
+  const runMatch = stdout.match(/Query run complete: (.+)/);
+  assert.ok(runMatch, "ask command should print the run directory");
+  const runDir = runMatch[1].trim();
+  assert.doesNotMatch(runDir, /T\d{6}Z-\d{8}T\d{6}Z-/);
+  assert.equal(existsSync(path.join(projectRoot, runDir, "query_intake.json")), true);
+  assert.equal(existsSync(path.join(projectRoot, runDir, "run_report.html")), true);
+});

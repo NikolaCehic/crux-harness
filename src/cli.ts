@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import path from "node:path";
+import { createInterface } from "node:readline/promises";
 import { Command } from "commander";
 import { createCruxApiServer } from "./api.js";
 import { runBenchmark, writeBenchmarkReport } from "./benchmark.js";
@@ -8,7 +9,7 @@ import { inspectRun } from "./inspect.js";
 import { formatMarketplaceList, formatMarketplaceVerification, installLocalPack, loadMarketplace, verifyMarketplace } from "./marketplace.js";
 import { formatPackInspection, formatPackList, loadPack, loadPacks } from "./packs.js";
 import { replayRun, rerunEvaluation, runHarness } from "./pipeline.js";
-import { runQuery } from "./query-intake.js";
+import { runQuery, type QueryRunOptions, type QueryRunResult } from "./query-intake.js";
 import { addClaimReview, addEvidenceAnnotation, exportReviewedMemo, initReview } from "./review.js";
 import { writeRunReport } from "./run-report.js";
 import { importSources } from "./source-importer.js";
@@ -38,17 +39,30 @@ program
   .option("--source-policy <policy>", "Source policy for the generated run", "hybrid")
   .description("Normalize a raw arbitrary query and run the Crux pipeline")
   .action(async (question: string, options: { context?: string; timeHorizon?: string; outputGoal?: string; sourcePolicy?: string }) => {
-    const result = await runQuery(process.cwd(), question, {
+    await runAndPrintQuery(question, {
       context: options.context,
       timeHorizon: options.timeHorizon,
       outputGoal: options.outputGoal,
       sourcePolicy: options.sourcePolicy
     });
-    console.log(`Query run complete: ${path.relative(process.cwd(), result.runDir)}`);
-    console.log(`Intent: ${result.intake.intent}`);
-    console.log(`Scope: ${result.intake.analysis_scope}`);
-    console.log(`Answerability: ${result.intake.answerability}`);
-    console.log(`Risk: ${result.intake.risk_level}`);
+  });
+
+program
+  .command("ask")
+  .argument("[question...]", "Raw arbitrary question. If omitted, Crux prompts interactively.")
+  .option("--context <text>", "Decision or analysis context")
+  .option("--time-horizon <text>", "Time horizon for the analysis")
+  .option("--output-goal <text>", "Output goal for the generated run", "decision memo")
+  .option("--source-policy <policy>", "Source policy for the generated run", "hybrid")
+  .description("Ask Crux an arbitrary question and get an auditable run")
+  .action(async (questionParts: string[] | undefined, options: { context?: string; timeHorizon?: string; outputGoal?: string; sourcePolicy?: string }) => {
+    const question = (questionParts ?? []).join(" ").trim() || await promptForQuestion();
+    await runAndPrintQuery(question, {
+      context: options.context,
+      timeHorizon: options.timeHorizon,
+      outputGoal: options.outputGoal,
+      sourcePolicy: options.sourcePolicy
+    });
   });
 
 program
@@ -304,3 +318,49 @@ program.parseAsync().catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;
 });
+
+async function runAndPrintQuery(question: string, options: QueryRunOptions): Promise<void> {
+  const result = await runQuery(process.cwd(), question, options);
+  const reportPath = await writeRunReport(process.cwd(), result.runDir);
+  printQueryRunSummary(result, reportPath);
+}
+
+function printQueryRunSummary(result: QueryRunResult, reportPath: string): void {
+  const runDir = path.relative(process.cwd(), result.runDir);
+  const generatedInput = path.relative(process.cwd(), result.generatedInputPath);
+  const queryIntake = path.join(runDir, "query_intake.json");
+  const decisionMemo = path.join(runDir, "decision_memo.md");
+
+  console.log(`Query run complete: ${runDir}`);
+  console.log(`Generated input: ${generatedInput}`);
+  console.log(`Query intake: ${queryIntake}`);
+  console.log(`Decision memo: ${decisionMemo}`);
+  console.log(`HTML report: ${reportPath}`);
+  console.log(`Intent: ${result.intake.intent}`);
+  console.log(`Scope: ${result.intake.analysis_scope}`);
+  console.log(`Answerability: ${result.intake.answerability}`);
+  console.log(`Risk: ${result.intake.risk_level}`);
+  console.log(`Open the memo: sed -n '1,220p' ${decisionMemo}`);
+  console.log(`Inspect the run: npm run crux -- inspect ${runDir}`);
+}
+
+async function promptForQuestion(): Promise<string> {
+  if (!process.stdin.isTTY) {
+    throw new Error("Pass a question after `crux ask` or run it in an interactive terminal.");
+  }
+
+  const readline = createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  try {
+    const question = (await readline.question("Question: ")).trim();
+    if (!question) {
+      throw new Error("Question must not be empty.");
+    }
+    return question;
+  } finally {
+    readline.close();
+  }
+}
