@@ -5,7 +5,7 @@ import type { ClaimDecomposerSelection } from "./claim-decomposer.js";
 import type { EvidenceMapperSelection } from "./llm.js";
 import type { RunConfig, RunInput } from "./types.js";
 
-export const HARNESS_VERSION = "1.0.0";
+export const HARNESS_VERSION = "1.1.0";
 
 export type BuildRunConfigInput = {
   projectRoot: string;

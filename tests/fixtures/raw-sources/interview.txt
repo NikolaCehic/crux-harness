@@ -1,0 +1,5 @@
+Customer interview notes
+
+The buyer said their team would only pay for an analysis agent if it could cite source material, preserve review history, and show where a recommendation might fail.
+
+The strongest adoption blocker is trust in the reasoning path rather than interest in automation.

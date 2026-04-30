@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0 - 2026-04-30
+
+- Added `crux sources import <inputDir> --out <sourcePackDir>` for converting raw Markdown, TXT, and CSV files into Crux source packs.
+- Added deterministic source IDs and generated source-pack files with required metadata front matter.
+- Added importer tests that validate generated source packs through existing source inventory and chunking logic.
+
 ## 1.0.0 - 2026-04-30
 
 - Added `run_config.json` so runs lock harness version, input hash, source policy, mapper selection, budgets, and prompt versions.

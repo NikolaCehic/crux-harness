@@ -4,13 +4,14 @@ import { Command } from "commander";
 import { runBenchmark, writeBenchmarkReport } from "./benchmark.js";
 import { inspectRun } from "./inspect.js";
 import { replayRun, rerunEvaluation, runHarness } from "./pipeline.js";
+import { importSources } from "./source-importer.js";
 
 const program = new Command();
 
 program
   .name("crux")
   .description("Spec-driven harness for decision-grade analysis agents.")
-  .version("1.0.0");
+  .version("1.1.0");
 
 program
   .command("run")
@@ -67,6 +68,31 @@ program
   .description("Print a compact summary of a Crux run")
   .action(async (runDir: string) => {
     console.log(await inspectRun(process.cwd(), runDir));
+  });
+
+const sources = program
+  .command("sources")
+  .description("Source-pack utilities");
+
+sources
+  .command("import")
+  .argument("<inputDir>", "Directory of raw source files")
+  .requiredOption("--out <sourcePackDir>", "Directory where the generated source pack should be written")
+  .description("Import raw files into a Crux source pack")
+  .action(async (inputDir: string, options: { out: string }) => {
+    const report = await importSources({
+      inputDir: path.resolve(process.cwd(), inputDir),
+      outputDir: path.resolve(process.cwd(), options.out)
+    });
+
+    console.log(`Imported ${report.imported_count} sources to ${path.relative(process.cwd(), report.output_dir)}`);
+    for (const source of report.sources) {
+      console.log(`  - ${source.id}: ${path.relative(process.cwd(), source.output_path)}`);
+    }
+    console.log(`Skipped ${report.skipped_count} files`);
+    for (const skipped of report.skipped) {
+      console.log(`  - ${path.relative(process.cwd(), skipped.path)} (${skipped.reason})`);
+    }
   });
 
 program

@@ -87,6 +87,12 @@ Inspect a run:
 npm run crux -- inspect runs/latest
 ```
 
+Import raw source files into a Crux source pack:
+
+```bash
+npm run crux -- sources import ./my-raw-sources --out sources/my-analysis
+```
+
 Run tests:
 
 ```bash
@@ -121,13 +127,15 @@ npm run crux -- benchmark --regression-threshold 0.05
 
 ## Current Implementation
 
-Crux v1.0 is a product-grade local harness for auditable, source-grounded analysis-agent runs. It remains deterministic by default, with optional LLM mappers behind strict schemas and provenance checks.
+Crux v1.1 is a product-grade local harness for auditable, source-grounded analysis-agent runs. It remains deterministic by default, with optional LLM mappers behind strict schemas and provenance checks.
 
 Every run writes `run_config.json`, which locks the harness version, input hash, source policy, budgets, mapper selection, and prompt versions.
 
 The deterministic generator is scope-aware for benchmark coverage. It supports strategic technology, investment diligence, policy analysis, product strategy, scientific thesis evaluation, market entry, and root-cause analysis scenarios.
 
 All seven benchmark scenarios now use local source packs, write `source_inventory.json` and `source_chunks.json`, and require source-backed evidence instead of placeholder evidence.
+
+Raw Markdown, TXT, and CSV files can be imported into source packs with `crux sources import`.
 
 Source-pack runs cite stable chunk IDs like `S1#chunk-001`, and integrity checks reject forged excerpts that do not appear in cited source chunks.
 

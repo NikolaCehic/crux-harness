@@ -1,0 +1,4 @@
+metric,value,notes
+pilot_count,3,Three teams agreed to test source-grounded analysis workflows.
+review_time_hours,6,Manual review takes six hours for a typical diligence memo.
+target_review_time_hours,2,The team wants review time under two hours without losing traceability.
