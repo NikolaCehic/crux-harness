@@ -1,0 +1,243 @@
+# Artifact Spec
+
+## Purpose
+
+Every Crux run produces structured artifacts. These artifacts are the product.
+
+The final memo is only one view over the underlying reasoning state.
+
+## Run Folder
+
+Each run writes to:
+
+```text
+runs/<run_id>/
+```
+
+Required files:
+
+```text
+input.yaml
+question_spec.json
+claims.json
+evidence.json
+contradictions.json
+red_team.md
+uncertainty.json
+decision_memo.md
+eval_report.json
+trace.jsonl
+```
+
+## input.yaml
+
+The user-authored input file.
+
+Required fields:
+
+- `question`
+- `decision_context`
+- `time_horizon`
+- `output_goal`
+
+Optional fields:
+
+- `geography`
+- `risk_tolerance`
+- `known_constraints`
+- `source_policy`
+- `tool_budget`
+- `model_budget`
+- `user_prior`
+
+## question_spec.json
+
+Normalized decision framing.
+
+Required fields:
+
+- `question`
+- `decision_type`
+- `decision_owner`
+- `context`
+- `time_horizon`
+- `success_criteria`
+- `constraints`
+- `unknowns`
+- `required_artifacts`
+
+## claims.json
+
+The claim graph.
+
+Required top-level fields:
+
+- `claims`
+- `edges`
+- `root_claim_ids`
+
+Each claim includes:
+
+- `id`
+- `text`
+- `type`
+- `status`
+- `importance`
+- `confidence`
+- `depends_on`
+- `evidence_ids`
+- `counterevidence_ids`
+- `notes`
+
+Allowed claim types:
+
+- `descriptive`
+- `causal`
+- `predictive`
+- `comparative`
+- `normative`
+- `decision`
+
+Allowed claim statuses:
+
+- `supported`
+- `weakly_supported`
+- `contested`
+- `unsupported`
+- `unknown`
+
+## evidence.json
+
+Evidence mapped to claims.
+
+Required top-level fields:
+
+- `evidence`
+
+Each evidence item includes:
+
+- `id`
+- `source_type`
+- `citation`
+- `summary`
+- `supports_claim_ids`
+- `challenges_claim_ids`
+- `reliability`
+- `recency`
+- `relevance`
+- `limitations`
+
+Allowed source types:
+
+- `web`
+- `paper`
+- `dataset`
+- `internal_document`
+- `calculation`
+- `expert_input`
+- `model_output`
+
+## contradictions.json
+
+Conflicts, weak points, and unresolved tensions.
+
+Required fields:
+
+- `contradictions`
+- `unsupported_critical_claims`
+- `missing_evidence`
+
+Each contradiction includes:
+
+- `id`
+- `claim_ids`
+- `description`
+- `severity`
+- `resolution_status`
+- `next_step`
+
+## red_team.md
+
+The strongest case against the emerging recommendation.
+
+Required sections:
+
+- `## Opposing Thesis`
+- `## Strongest Counterarguments`
+- `## Failure Modes`
+- `## Missing Evidence`
+- `## Recommendation Impact`
+
+## uncertainty.json
+
+Uncertainty and sensitivity model.
+
+Required fields:
+
+- `overall_confidence`
+- `key_uncertainties`
+- `sensitivity`
+- `what_would_change_my_mind`
+- `recommended_tests`
+
+Each key uncertainty includes:
+
+- `id`
+- `description`
+- `current_estimate`
+- `confidence`
+- `impact_if_wrong`
+- `evidence_needed`
+
+## decision_memo.md
+
+Human-readable final synthesis.
+
+Required sections:
+
+- `## Recommendation`
+- `## Executive Summary`
+- `## Core Reasoning`
+- `## Key Claims`
+- `## Evidence Quality`
+- `## Red-Team Findings`
+- `## Uncertainty`
+- `## What Would Change This Decision`
+- `## Next Tests`
+
+## eval_report.json
+
+Evaluator output for the run.
+
+Required fields:
+
+- `scores`
+- `findings`
+- `failed_checks`
+- `improvement_recommendations`
+
+Required score dimensions:
+
+- `schema_validity`
+- `claim_coverage`
+- `evidence_traceability`
+- `source_quality`
+- `contradiction_handling`
+- `red_team_strength`
+- `uncertainty_quality`
+- `decision_usefulness`
+
+## trace.jsonl
+
+Append-only execution trace.
+
+Each line is one JSON object with:
+
+- `timestamp`
+- `stage`
+- `event_type`
+- `message`
+- `input_artifacts`
+- `output_artifacts`
+- `metadata`
+

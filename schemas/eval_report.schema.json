@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crux.local/schemas/eval_report.schema.json",
+  "title": "EvalReport",
+  "type": "object",
+  "required": ["scores", "findings", "failed_checks", "improvement_recommendations"],
+  "properties": {
+    "scores": {
+      "type": "object",
+      "required": [
+        "schema_validity",
+        "claim_coverage",
+        "evidence_traceability",
+        "source_quality",
+        "contradiction_handling",
+        "red_team_strength",
+        "uncertainty_quality",
+        "decision_usefulness"
+      ],
+      "properties": {
+        "schema_validity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "claim_coverage": { "type": "number", "minimum": 0, "maximum": 1 },
+        "evidence_traceability": { "type": "number", "minimum": 0, "maximum": 1 },
+        "source_quality": { "type": "number", "minimum": 0, "maximum": 1 },
+        "contradiction_handling": { "type": "number", "minimum": 0, "maximum": 1 },
+        "red_team_strength": { "type": "number", "minimum": 0, "maximum": 1 },
+        "uncertainty_quality": { "type": "number", "minimum": 0, "maximum": 1 },
+        "decision_usefulness": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "findings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "failed_checks": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "improvement_recommendations": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}
+

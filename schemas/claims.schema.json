@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crux.local/schemas/claims.schema.json",
+  "title": "Claims",
+  "type": "object",
+  "required": ["claims", "edges", "root_claim_ids"],
+  "properties": {
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "type",
+          "status",
+          "importance",
+          "confidence",
+          "depends_on",
+          "evidence_ids",
+          "counterevidence_ids",
+          "notes"
+        ],
+        "properties": {
+          "id": { "type": "string", "pattern": "^C[0-9]+$" },
+          "text": { "type": "string", "minLength": 1 },
+          "type": {
+            "type": "string",
+            "enum": ["descriptive", "causal", "predictive", "comparative", "normative", "decision"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["supported", "weakly_supported", "contested", "unsupported", "unknown"]
+          },
+          "importance": { "type": "number", "minimum": 0, "maximum": 1 },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "depends_on": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^C[0-9]+$" }
+          },
+          "evidence_ids": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^E[0-9]+$" }
+          },
+          "counterevidence_ids": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^E[0-9]+$" }
+          },
+          "notes": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "relation"],
+        "properties": {
+          "from": { "type": "string", "pattern": "^C[0-9]+$" },
+          "to": { "type": "string", "pattern": "^C[0-9]+$" },
+          "relation": {
+            "type": "string",
+            "enum": ["supports", "depends_on", "challenges", "causes", "enables"]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "root_claim_ids": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^C[0-9]+$" }
+    }
+  },
+  "additionalProperties": false
+}
+

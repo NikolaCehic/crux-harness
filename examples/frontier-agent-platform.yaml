@@ -1,0 +1,18 @@
+question: "Should a frontier AI startup build an enterprise agent platform in 2026?"
+decision_context: "A seed-stage technical team is choosing its primary product strategy for the next 12 months."
+time_horizon: "12 months"
+output_goal: "decision memo"
+geography: "US and EU"
+risk_tolerance: "medium"
+known_constraints:
+  - "Small team with strong engineering ability but limited enterprise sales capacity."
+  - "Must reach credible customer traction within 12 months."
+  - "Product should benefit from technical depth rather than pure distribution."
+source_policy: "offline"
+tool_budget:
+  max_research_items: 12
+  max_agent_steps: 20
+model_budget:
+  max_llm_calls: 12
+user_prior: "Enterprise agent platforms are attractive but may be crowded and distribution-heavy."
+

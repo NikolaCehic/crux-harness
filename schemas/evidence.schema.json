@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crux.local/schemas/evidence.schema.json",
+  "title": "Evidence",
+  "type": "object",
+  "required": ["evidence"],
+  "properties": {
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "source_type",
+          "citation",
+          "summary",
+          "supports_claim_ids",
+          "challenges_claim_ids",
+          "reliability",
+          "recency",
+          "relevance",
+          "limitations"
+        ],
+        "properties": {
+          "id": { "type": "string", "pattern": "^E[0-9]+$" },
+          "source_type": {
+            "type": "string",
+            "enum": ["web", "paper", "dataset", "internal_document", "calculation", "expert_input", "model_output"]
+          },
+          "citation": { "type": "string", "minLength": 1 },
+          "summary": { "type": "string", "minLength": 1 },
+          "supports_claim_ids": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^C[0-9]+$" }
+          },
+          "challenges_claim_ids": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^C[0-9]+$" }
+          },
+          "reliability": { "type": "number", "minimum": 0, "maximum": 1 },
+          "recency": { "type": "number", "minimum": 0, "maximum": 1 },
+          "relevance": { "type": "number", "minimum": 0, "maximum": 1 },
+          "limitations": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
+

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crux.local/schemas/question_spec.schema.json",
+  "title": "QuestionSpec",
+  "type": "object",
+  "required": [
+    "question",
+    "decision_type",
+    "decision_owner",
+    "context",
+    "time_horizon",
+    "success_criteria",
+    "constraints",
+    "unknowns",
+    "required_artifacts"
+  ],
+  "properties": {
+    "question": { "type": "string", "minLength": 1 },
+    "decision_type": { "type": "string", "minLength": 1 },
+    "decision_owner": { "type": "string", "minLength": 1 },
+    "context": { "type": "string", "minLength": 1 },
+    "time_horizon": { "type": "string", "minLength": 1 },
+    "success_criteria": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "constraints": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "unknowns": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "required_artifacts": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "additionalProperties": false
+}
+
