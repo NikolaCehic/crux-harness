@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.12.1 - 2026-05-02
+
+- Added detailed human-readable Markdown specs for every bounded agent, including Red Team Agent and Council Moderator.
+- Added `specs/agents/README.md` to document the bounded-agent spec contract and required sections.
+- Added manifest/spec drift tests so runtime agent IDs, names, roles, stages, max-step limits, allowed inputs, and produced outputs stay aligned with the Markdown specs.
+
 ## 1.12.0 - 2026-05-02
 
 - Added a bounded specialist agent layer to the core pipeline.

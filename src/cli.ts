@@ -21,7 +21,7 @@ const program = new Command();
 program
   .name("crux")
   .description("Spec-driven harness for decision-grade analysis agents.")
-  .version("1.12.0");
+  .version("1.12.1");
 
 program
   .command("run")

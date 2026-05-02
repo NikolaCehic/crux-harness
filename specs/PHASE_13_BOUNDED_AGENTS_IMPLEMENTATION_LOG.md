@@ -56,6 +56,38 @@ Verification:
 - `npm run crux -- marketplace verify` passed for all certified packs.
 - `npm run release:verify` passed.
 
+## 2026-05-02: Per-Agent Human Specs
+
+Goal:
+
+- Give every bounded agent its own detailed Markdown spec.
+- Make Red Team Agent and Council Moderator explicit human-readable contracts, not only runtime entries.
+- Prevent the runtime manifest and docs from drifting.
+
+Files added:
+
+- `specs/agents/README.md`: documents the bounded-agent spec contract and required sections.
+- `specs/agents/research_scout.md`: source gap planner spec.
+- `specs/agents/evidence_auditor.md`: claim support auditor spec.
+- `specs/agents/red_team_agent.md`: recommendation breaker spec.
+- `specs/agents/council_moderator.md`: cross-agent synthesis judge spec.
+- `specs/agents/replay_planner.md`: run improvement planner spec.
+- `specs/agents/eval_scenario_agent.md`: E2E test designer spec.
+
+Guardrail added:
+
+- `tests/agents.test.ts` now verifies that every runtime agent has a matching Markdown file and that ID, name, role, stage, max steps, allowed inputs, produced outputs, and required sections match the manifest.
+
+Verification:
+
+- `npm run release:verify` passed.
+- `npm test` passed with 74 tests.
+- `npm run benchmark` passed 7/7 scenarios with 0 regressions.
+
+Backtrack note:
+
+- To backtrack this documentation layer, remove `specs/agents/` and the spec drift test from `tests/agents.test.ts`.
+
 Backtrack note:
 
 - The feature is isolated around `src/agents.ts`, the `run_agents` stage, and two artifacts.

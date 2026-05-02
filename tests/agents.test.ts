@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { buildAgentManifest, runBoundedAgents } from "../src/agents.js";
@@ -8,6 +8,24 @@ import { runHarness } from "../src/pipeline.js";
 
 const projectRoot = process.cwd();
 const exampleInput = "examples/frontier-agent-platform.yaml";
+const agentSpecDir = path.join(projectRoot, "specs", "agents");
+const requiredAgentSpecSections = [
+  "## Purpose",
+  "## Runtime Stage",
+  "## Allowed Inputs",
+  "## Produced Outputs",
+  "## Autonomy Boundary",
+  "## Decision Rubric",
+  "## Pass Criteria",
+  "## Warn Criteria",
+  "## Fail Criteria",
+  "## Blocking Issues",
+  "## Recommendations It May Emit",
+  "## Failure Modes",
+  "## Example",
+  "## Test Coverage",
+  "## Version Notes"
+];
 
 process.env.CRUX_CLAIM_DECOMPOSER = "deterministic";
 process.env.CRUX_EVIDENCE_MAPPER = "deterministic";
@@ -30,6 +48,39 @@ test("bounded agent manifest defines inspectable specialist agents", () => {
   assert.equal(manifest.agents.every((agent) => agent.autonomy === "bounded"), true);
   assert.equal(manifest.agents.every((agent) => agent.limits.no_external_side_effects), true);
   assert.equal(manifest.agents.every((agent) => agent.allowed_inputs.length > 0), true);
+});
+
+test("bounded agent specs exist and stay aligned with the runtime manifest", async () => {
+  const manifest = buildAgentManifest();
+  const specFiles = (await readdir(agentSpecDir))
+    .filter((file) => file.endsWith(".md") && file !== "README.md")
+    .sort();
+
+  assert.deepEqual(specFiles, manifest.agents.map((agent) => `${agent.agent_id}.md`).sort());
+
+  for (const agent of manifest.agents) {
+    const spec = await readFile(path.join(agentSpecDir, `${agent.agent_id}.md`), "utf8");
+
+    assert.match(spec, new RegExp(`^# ${escapeRegExp(agent.name)}$`, "m"));
+    assert.match(spec, new RegExp(`Agent ID: \`${escapeRegExp(agent.agent_id)}\``));
+    assert.match(spec, new RegExp(`Runtime Name: \`${escapeRegExp(agent.name)}\``));
+    assert.match(spec, new RegExp(`Role: \`${escapeRegExp(agent.role)}\``));
+    assert.match(spec, new RegExp(`Stage: \`${escapeRegExp(agent.stage)}\``));
+    assert.match(spec, new RegExp(`Autonomy: \`${agent.autonomy}\``));
+    assert.match(spec, new RegExp(`Max Steps: \`${agent.limits.max_steps}\``));
+
+    for (const section of requiredAgentSpecSections) {
+      assert.match(spec, new RegExp(`^${escapeRegExp(section)}$`, "m"), `${agent.agent_id} is missing ${section}`);
+    }
+
+    for (const input of agent.allowed_inputs) {
+      assert.match(spec, new RegExp(`- \`${escapeRegExp(input)}\``), `${agent.agent_id} spec is missing input ${input}`);
+    }
+
+    for (const output of agent.produced_outputs) {
+      assert.match(spec, new RegExp(`- \`${escapeRegExp(output)}\``), `${agent.agent_id} spec is missing output ${output}`);
+    }
+  }
 });
 
 test("bounded agents emit run-specific findings without external side effects", async () => {
@@ -119,3 +170,7 @@ test("runBoundedAgents synthesizes blocking issues when evidence support is weak
   assert.equal(findings.synthesis.blocking_issues.some((issue) => issue.includes("Evidence Auditor")), true);
   assert.equal(findings.findings.find((finding) => finding.agent_id === "research_scout")?.status, "warn");
 });
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
