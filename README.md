@@ -35,6 +35,8 @@ runs/<run_id>/
   red_team.md
   uncertainty.json
   decision_memo.md
+  agent_manifest.json
+  agent_findings.json
   eval_report.json
   trace.jsonl
 ```
@@ -66,6 +68,7 @@ raw question
 -> red team
 -> uncertainty model
 -> decision memo
+-> bounded specialist agents
 -> evaluator council
 -> diagnostics
 -> replayable run contract
@@ -78,6 +81,7 @@ raw question
 - **Schema-enforced contracts**: JSON artifacts are validated against explicit schemas.
 - **Replay and diff**: runs can be replayed and compared for prompt, mapper, source, stage, budget, and artifact-contract drift.
 - **Evaluator council**: specialist reviewers assess evidence, claim graph quality, faithfulness, red-team strength, uncertainty, decision utility, domain fit, and synthesis.
+- **Bounded agents**: inspectable specialist agents for research gaps, evidence support, red-team pressure, council moderation, replay planning, and eval-scenario design.
 - **Diagnostics**: failures are classified by stage, severity, category, message, and recommended fix.
 - **Human review**: reviewers can approve/reject claims, annotate evidence, and export reviewed memos without overwriting machine artifacts.
 - **Static inspector**: generate a self-contained HTML run report.
@@ -171,6 +175,7 @@ source provenance checks
 replay compatibility
 run comparison
 eval council
+bounded agent findings
 diagnostics
 human review
 E2E release gate

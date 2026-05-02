@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type {
+  AgentFindingsArtifact,
   ClaimsArtifact,
   ContradictionsArtifact,
   EvalDiagnostic,
@@ -24,6 +25,7 @@ type LoadedRun = {
   evidence?: EvidenceArtifact;
   contradictions?: ContradictionsArtifact;
   uncertainty?: UncertaintyArtifact;
+  agentFindings?: AgentFindingsArtifact;
   redTeam?: string;
   decisionMemo?: string;
   failedChecks: string[];
@@ -90,7 +92,7 @@ export async function evaluateRun(projectRoot: string, runDir: string): Promise<
 async function loadRun(runDir: string): Promise<LoadedRun> {
   const failedChecks: string[] = [];
 
-  const [runConfig, questionSpec, sourceInventory, sourceChunks, claims, evidence, contradictions, uncertainty, redTeam, decisionMemo] = await Promise.all([
+  const [runConfig, questionSpec, sourceInventory, sourceChunks, claims, evidence, contradictions, uncertainty, agentFindings, redTeam, decisionMemo] = await Promise.all([
     readJson<RunConfig>(runDir, "run_config.json", failedChecks),
     readJson<QuestionSpec>(runDir, "question_spec.json", failedChecks),
     readJson<SourceInventory>(runDir, "source_inventory.json", failedChecks),
@@ -99,11 +101,12 @@ async function loadRun(runDir: string): Promise<LoadedRun> {
     readJson<EvidenceArtifact>(runDir, "evidence.json", failedChecks),
     readJson<ContradictionsArtifact>(runDir, "contradictions.json", failedChecks),
     readJson<UncertaintyArtifact>(runDir, "uncertainty.json", failedChecks),
+    readOptionalJson<AgentFindingsArtifact>(runDir, "agent_findings.json"),
     readText(runDir, "red_team.md", failedChecks),
     readText(runDir, "decision_memo.md", failedChecks)
   ]);
 
-  return { runConfig, questionSpec, sourceInventory, sourceChunks, claims, evidence, contradictions, uncertainty, redTeam, decisionMemo, failedChecks };
+  return { runConfig, questionSpec, sourceInventory, sourceChunks, claims, evidence, contradictions, uncertainty, agentFindings, redTeam, decisionMemo, failedChecks };
 }
 
 async function readJson<T>(runDir: string, file: string, failedChecks: string[]): Promise<T | undefined> {
@@ -124,6 +127,14 @@ async function readText(runDir: string, file: string, failedChecks: string[]): P
   }
 }
 
+async function readOptionalJson<T>(runDir: string, file: string): Promise<T | undefined> {
+  try {
+    return JSON.parse(await readFile(path.join(runDir, file), "utf8")) as T;
+  } catch {
+    return undefined;
+  }
+}
+
 async function validateLoadedRun(validator: ArtifactValidator, loaded: LoadedRun): Promise<string[]> {
   const checks: Array<[string, string, unknown]> = [
     ["run_config.json", schemaIds.runConfig, loaded.runConfig],
@@ -133,7 +144,8 @@ async function validateLoadedRun(validator: ArtifactValidator, loaded: LoadedRun
     ["claims.json", schemaIds.claims, loaded.claims],
     ["evidence.json", schemaIds.evidence, loaded.evidence],
     ["contradictions.json", schemaIds.contradictions, loaded.contradictions],
-    ["uncertainty.json", schemaIds.uncertainty, loaded.uncertainty]
+    ["uncertainty.json", schemaIds.uncertainty, loaded.uncertainty],
+    ["agent_findings.json", schemaIds.agentFindings, loaded.agentFindings]
   ];
 
   const failures: string[] = [];
@@ -456,6 +468,10 @@ function buildFindings(loaded: LoadedRun, failedChecks: string[], faithfulnessFi
     findings.push("Unsupported critical claims are explicitly surfaced instead of hidden in the memo.");
   }
 
+  if (loaded.agentFindings) {
+    findings.push(`Bounded agent layer ran ${loaded.agentFindings.findings.length} specialist checks with synthesis status ${loaded.agentFindings.synthesis.status}.`);
+  }
+
   if (loaded.evidence?.evidence.some((item) => item.limitations.toLowerCase().includes("placeholder"))) {
     findings.push("Source quality is limited because the run uses placeholder offline evidence.");
   }
@@ -478,6 +494,10 @@ function buildRecommendations(loaded: LoadedRun, failedChecks: string[]): string
 
   if (!loaded.runConfig) {
     recommendations.push("Add run_config.json so replays lock harness version, mapper selection, prompts, and source policy.");
+  }
+
+  if (loaded.agentFindings?.synthesis.next_actions.length) {
+    recommendations.push(`Agent next action: ${loaded.agentFindings.synthesis.next_actions[0]}`);
   }
 
   recommendations.push("Compare eval scores across harness versions before changing prompts or mappers.");
@@ -531,6 +551,18 @@ function buildDiagnostics(
       message: failure,
       recommended_fix: "Rewrite uncertainties with specific assumptions, impact if wrong, evidence needed, and decision-changing tests."
     });
+  }
+
+  for (const finding of loaded.agentFindings?.findings ?? []) {
+    for (const issue of finding.blocking_issues) {
+      diagnostics.push({
+        stage: finding.stage,
+        severity: "high",
+        category: `agent_${finding.agent_id}`,
+        message: `${finding.name}: ${issue}`,
+        recommended_fix: finding.recommendations[0] ?? "Inspect agent_findings.json and repair the flagged run artifact."
+      });
+    }
   }
 
   return dedupeDiagnostics(diagnostics).map((diagnostic, index) => ({

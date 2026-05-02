@@ -235,6 +235,67 @@ export type UncertaintyArtifact = {
   recommended_tests: string[];
 };
 
+export type AgentId =
+  | "research_scout"
+  | "evidence_auditor"
+  | "red_team_agent"
+  | "council_moderator"
+  | "replay_planner"
+  | "eval_scenario_agent";
+
+export type AgentManifest = {
+  schema_version: "crux.agent_manifest.v1";
+  mode: "bounded";
+  agents: AgentDefinition[];
+};
+
+export type AgentDefinition = {
+  agent_id: AgentId;
+  name: string;
+  role: string;
+  stage: string;
+  autonomy: "bounded";
+  purpose: string;
+  allowed_inputs: string[];
+  produced_outputs: string[];
+  limits: {
+    no_external_side_effects: boolean;
+    max_steps: number;
+    requires_trace: boolean;
+  };
+};
+
+export type AgentFindingStatus = "pass" | "warn" | "fail";
+
+export type AgentFinding = {
+  agent_id: AgentId;
+  name: string;
+  role: string;
+  status: AgentFindingStatus;
+  confidence: number;
+  stage: string;
+  summary: string;
+  findings: string[];
+  blocking_issues: string[];
+  recommendations: string[];
+  next_actions: string[];
+  input_artifacts: string[];
+};
+
+export type AgentFindingsArtifact = {
+  schema_version: "crux.agent_findings.v1";
+  run_id: string;
+  created_at: string;
+  mode: "bounded";
+  findings: AgentFinding[];
+  synthesis: {
+    status: AgentFindingStatus;
+    confidence: number;
+    blocking_issues: string[];
+    next_actions: string[];
+  };
+};
+
 export type EvalReport = {
   scores: {
     schema_validity: number;

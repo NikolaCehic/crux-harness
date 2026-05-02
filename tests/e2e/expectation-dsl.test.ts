@@ -32,6 +32,8 @@ test("extended expectation DSL verifies product-grade run contracts", async () =
       "red_team.md",
       "uncertainty.json",
       "decision_memo.md",
+      "agent_manifest.json",
+      "agent_findings.json",
       "eval_report.json",
       "trace.jsonl"
     ],
@@ -51,9 +53,10 @@ test("extended expectation DSL verifies product-grade run contracts", async () =
       "red_team",
       "model_uncertainty",
       "write_decision_memo",
+      "run_agents",
       "evaluate"
     ],
-    required_report_anchors: ["summary", "memo", "claims", "evidence", "sources", "eval", "diagnostics", "trace"]
+    required_report_anchors: ["summary", "memo", "claims", "evidence", "sources", "agents", "eval", "diagnostics", "trace"]
   };
 
   const actual = await checkBenchmarkExpectation(result.runDir, expectation);

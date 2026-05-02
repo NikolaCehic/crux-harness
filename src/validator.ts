@@ -57,6 +57,8 @@ export const schemaIds = {
   evidence: "https://crux.local/schemas/evidence.schema.json",
   contradictions: "https://crux.local/schemas/contradictions.schema.json",
   uncertainty: "https://crux.local/schemas/uncertainty.schema.json",
+  agentManifest: "https://crux.local/schemas/agent_manifest.schema.json",
+  agentFindings: "https://crux.local/schemas/agent_findings.schema.json",
   evalReport: "https://crux.local/schemas/eval_report.schema.json",
   queryIntake: "https://crux.local/schemas/query_intake.schema.json",
   review: "https://crux.local/schemas/review.schema.json",

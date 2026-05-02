@@ -22,10 +22,12 @@ test("v1 runs lock configuration and expose enhanced eval scores", async () => {
 
   const runConfig = JSON.parse(await readFile(runConfigPath, "utf8"));
   assert.equal(runConfig.schema_version, "crux.run_config.v1");
-  assert.equal(runConfig.harness_version, "1.11.0");
+  assert.equal(runConfig.harness_version, "1.12.0");
   assert.equal(runConfig.mappers.claim_decomposer.type, "deterministic");
   assert.equal(runConfig.mappers.evidence_mapper.type, "deterministic");
   assert.equal(runConfig.prompts.evidence_mapper, "evidence-mapper.v1");
+  assert.equal(runConfig.artifact_contract.artifacts.some((artifact: { name: string }) => artifact.name === "agent_manifest.json"), true);
+  assert.equal(runConfig.artifact_contract.artifacts.some((artifact: { name: string }) => artifact.name === "agent_findings.json"), true);
 
   const evalReport = JSON.parse(await readFile(path.join(result.runDir, "eval_report.json"), "utf8"));
   assert.equal(evalReport.scores.faithfulness, 1);

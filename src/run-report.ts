@@ -366,6 +366,7 @@ export function renderRunReportHtml(bundle: RunArtifactBundle): string {
         <a href="#sources">Sources</a>
         <a href="#contradictions">Contradictions</a>
         <a href="#uncertainty">Uncertainty</a>
+        <a href="#agents">Agents</a>
         <a href="#eval">Eval</a>
         <a href="#diagnostics">Diagnostics</a>
         <a href="#trace">Trace</a>
@@ -386,7 +387,7 @@ export function renderRunReportHtml(bundle: RunArtifactBundle): string {
         ${metric("Sources", bundle.summary.source_count)}
         ${metric("Chunks", bundle.summary.source_chunk_count)}
         ${metric("Contradictions", bundle.summary.contradiction_count)}
-        ${metric("Diagnostics", bundle.summary.diagnostic_count)}
+        ${metric("Agents", bundle.summary.agent_count)}
       </section>
 
       <section class="panel" id="memo">
@@ -488,6 +489,27 @@ export function renderRunReportHtml(bundle: RunArtifactBundle): string {
                   <td>${reviewer.findings.map(escapeHtml).join("<br>")}</td>
                 </tr>`).join("")}</tbody>
             </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="agents">
+        <div class="panel-body">
+          <h2>Bounded Agents</h2>
+          <div class="subtle">Synthesis: <span class="status ${bundle.summary.agent_status}">${escapeHtml(bundle.summary.agent_status)}</span> confidence ${bundle.agent_findings.synthesis.confidence}</div>
+          <div class="diagnostic-list">
+            ${bundle.agent_findings.findings.map((finding) => `
+              <article class="item">
+                <div class="item-head">
+                  <strong>${escapeHtml(finding.name)} &middot; ${escapeHtml(finding.role)}</strong>
+                  <span class="status ${finding.status}">${escapeHtml(finding.status)}</span>
+                </div>
+                <div>${escapeHtml(finding.summary)}</div>
+                <div class="subtle">Stage ${escapeHtml(finding.stage)} &middot; confidence ${finding.confidence}</div>
+                <div class="chips">${finding.input_artifacts.map((artifact) => `<span class="chip">${escapeHtml(artifact)}</span>`).join("")}</div>
+                ${finding.blocking_issues.length ? `<h3>Blocking Issues</h3><ul>${finding.blocking_issues.map((issue) => `<li>${escapeHtml(issue)}</li>`).join("")}</ul>` : ""}
+                ${finding.next_actions.length ? `<h3>Next Actions</h3><ul>${finding.next_actions.map((action) => `<li>${escapeHtml(action)}</li>`).join("")}</ul>` : ""}
+              </article>`).join("")}
           </div>
         </div>
       </section>

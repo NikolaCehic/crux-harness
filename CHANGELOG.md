@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.12.0 - 2026-05-02
+
+- Added a bounded specialist agent layer to the core pipeline.
+- Added `agent_manifest.json` so each run records the available agents, roles, allowed inputs, outputs, limits, and no-external-side-effect boundary.
+- Added `agent_findings.json` with run-specific outputs from Research Scout, Evidence Auditor, Red Team Agent, Council Moderator, Replay Planner, and Eval Scenario Agent.
+- Added a new `run_agents` stage with deterministic module metadata in `run_config.json` and trace events.
+- Fed agent blocking issues and next actions into evaluation diagnostics and improvement recommendations.
+- Added agent summaries to `crux inspect` and the static HTML run report.
+- Kept older run reports inspectable by rendering a warning when legacy runs are missing bounded-agent artifacts.
+- Added schemas and tests for bounded agent definitions, run findings, artifact contracts, run reports, and pipeline integration.
+
 ## 1.11.0 - 2026-04-30
 
 - Added scope-agnostic arbitrary query intake with `query_intake.json`.

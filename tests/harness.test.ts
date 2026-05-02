@@ -28,6 +28,8 @@ test("runHarness creates a complete, schema-valid deterministic run", async () =
     "red_team.md",
     "uncertainty.json",
     "decision_memo.md",
+    "agent_manifest.json",
+    "agent_findings.json",
     "eval_report.json",
     "trace.jsonl"
   ]) {
@@ -55,6 +57,10 @@ test("runHarness creates a complete, schema-valid deterministic run", async () =
   const evalReport = JSON.parse(await readFile(path.join(result.runDir, "eval_report.json"), "utf8"));
   assert.equal(evalReport.scores.schema_validity, 1);
   assert.deepEqual(evalReport.failed_checks, []);
+
+  const agentFindings = JSON.parse(await readFile(path.join(result.runDir, "agent_findings.json"), "utf8"));
+  assert.equal(agentFindings.findings.length, 6);
+  assert.equal(["pass", "warn", "fail"].includes(agentFindings.synthesis.status), true);
 
   const traceLines = readFileSync(path.join(result.runDir, "trace.jsonl"), "utf8").trim().split("\n");
   assert.equal(traceLines.length >= 20, true);

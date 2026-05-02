@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, unlink } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import test from "node:test";
@@ -34,6 +34,8 @@ test("loadRunArtifactBundle builds a linked run inspection bundle", async () => 
   assert.equal(bundle.summary.claim_count, 12);
   assert.equal(bundle.summary.evidence_count, 8);
   assert.equal(bundle.summary.source_count, 5);
+  assert.equal(bundle.summary.agent_count, 6);
+  assert.equal(bundle.agent_findings.findings.some((finding) => finding.agent_id === "evidence_auditor"), true);
   assert.equal(bundle.summary.diagnostic_count, 0);
   assert.ok(sourceBackedEvidence);
   assert.equal(bundle.relationships.evidence_ids_by_claim_id.C1.length > 0, true);
@@ -54,9 +56,25 @@ test("renderRunReportHtml links memo, claims, evidence, sources, eval, diagnosti
   assert.match(html, /href="#evidence-/);
   assert.match(html, new RegExp(`id="evidence-${sourceBackedEvidence.id}"`));
   assert.match(html, /href="#source-S[0-9]+"/);
+  assert.match(html, /id="agents"/);
+  assert.match(html, /Bounded Agents/);
   assert.match(html, /id="eval"/);
   assert.match(html, /id="diagnostics"/);
   assert.match(html, /id="trace"/);
+});
+
+test("loadRunArtifactBundle keeps legacy runs inspectable when agent artifacts are absent", async () => {
+  const result = await runHarness(projectRoot, exampleInput);
+  await unlink(path.join(result.runDir, "agent_manifest.json"));
+  await unlink(path.join(result.runDir, "agent_findings.json"));
+
+  const bundle = await loadRunArtifactBundle(projectRoot, result.runDir);
+  const html = renderRunReportHtml(bundle);
+
+  assert.equal(bundle.summary.agent_count, 0);
+  assert.equal(bundle.summary.agent_status, "warn");
+  assert.match(html, /legacy run/);
+  assert.match(html, /Regenerate this run/);
 });
 
 test("compiled CLI writes a static run inspector report", async () => {
@@ -73,6 +91,7 @@ test("compiled CLI writes a static run inspector report", async () => {
   const html = await readFile(path.join(projectRoot, reportPath), "utf8");
   assert.match(html, /Crux Run Inspector/);
   assert.match(html, /Council/);
+  assert.match(html, /Bounded Agents/);
   assert.match(html, /Claim Graph/);
   assert.match(html, /Evidence/);
 });

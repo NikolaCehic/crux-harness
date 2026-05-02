@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crux.local/schemas/agent_findings.schema.json",
+  "title": "AgentFindings",
+  "type": "object",
+  "required": ["schema_version", "run_id", "created_at", "mode", "findings", "synthesis"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "crux.agent_findings.v1" },
+    "run_id": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "mode": { "type": "string", "const": "bounded" },
+    "findings": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "synthesis": {
+      "type": "object",
+      "required": ["status", "confidence", "blocking_issues", "next_actions"],
+      "properties": {
+        "status": { "enum": ["pass", "warn", "fail"] },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "blocking_issues": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "next_actions": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "required": [
+        "agent_id",
+        "name",
+        "role",
+        "status",
+        "confidence",
+        "stage",
+        "summary",
+        "findings",
+        "blocking_issues",
+        "recommendations",
+        "next_actions",
+        "input_artifacts"
+      ],
+      "properties": {
+        "agent_id": {
+          "enum": [
+            "research_scout",
+            "evidence_auditor",
+            "red_team_agent",
+            "council_moderator",
+            "replay_planner",
+            "eval_scenario_agent"
+          ]
+        },
+        "name": { "type": "string", "minLength": 1 },
+        "role": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["pass", "warn", "fail"] },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "stage": { "type": "string", "minLength": 1 },
+        "summary": { "type": "string", "minLength": 1 },
+        "findings": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "blocking_issues": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "recommendations": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "next_actions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "input_artifacts": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

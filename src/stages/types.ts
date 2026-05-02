@@ -7,6 +7,7 @@ export const stageNames = [
   "red_team",
   "model_uncertainty",
   "write_decision_memo",
+  "run_agents",
   "evaluate"
 ] as const;
 

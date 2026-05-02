@@ -30,6 +30,7 @@ test("stage module registry defaults every pipeline stage to deterministic modul
     "red_team",
     "model_uncertainty",
     "write_decision_memo",
+    "run_agents",
     "evaluate"
   ]);
   assert.equal(registry.get("build_claim_graph").kind, "deterministic");
@@ -82,7 +83,7 @@ test("runStageModule records attempts and retries failed work", async () => {
 test("pipeline trace and run_config record selected stage modules", async () => {
   const result = await runHarness(projectRoot, "examples/frontier-agent-platform.yaml");
   const runConfig = JSON.parse(await readFile(path.join(result.runDir, "run_config.json"), "utf8"));
-  assert.equal(runConfig.stages.length, 9);
+  assert.equal(runConfig.stages.length, 10);
   assert.equal(runConfig.stages.some((stage: { stage: string; module_id: string }) => {
     return stage.stage === "build_claim_graph" && stage.module_id === "deterministic.claim-decomposer";
   }), true);

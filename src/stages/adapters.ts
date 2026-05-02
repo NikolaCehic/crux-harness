@@ -1,4 +1,9 @@
 import {
+  buildAgentManifest,
+  runBoundedAgents,
+  type RunBoundedAgentsInput
+} from "../agents.js";
+import {
   buildContradictions,
   buildDecisionMemo,
   buildEvidence,
@@ -48,6 +53,7 @@ export type StageAdapters = {
   redTeam: StageAdapter<{ claims: ClaimsArtifact; evidence: EvidenceArtifact; contradictions: ContradictionsArtifact }, string>;
   modelUncertainty: StageAdapter<{ claims: ClaimsArtifact; evidence: EvidenceArtifact; contradictions: ContradictionsArtifact; redTeam: string }, UncertaintyArtifact>;
   writeDecisionMemo: StageAdapter<{ claims: ClaimsArtifact; evidence: EvidenceArtifact; contradictions: ContradictionsArtifact; redTeam: string; uncertainty: UncertaintyArtifact }, string>;
+  runAgents: StageAdapter<RunBoundedAgentsInput, { manifest: ReturnType<typeof buildAgentManifest>; findings: ReturnType<typeof runBoundedAgents> }>;
   evaluate: StageAdapter<undefined, EvalReport>;
 };
 
@@ -109,6 +115,13 @@ export function createStageAdapters(registry: StageModuleRegistry): StageAdapter
     writeDecisionMemo: {
       ...registry.get("write_decision_memo"),
       run: async (_input, context) => buildDecisionMemo(context.input)
+    },
+    runAgents: {
+      ...registry.get("run_agents"),
+      run: async (input) => ({
+        manifest: input.manifest,
+        findings: runBoundedAgents(input)
+      })
     },
     evaluate: {
       ...registry.get("evaluate"),

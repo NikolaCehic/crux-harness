@@ -1,5 +1,6 @@
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
+import { buildAgentManifest } from "./agents.js";
 import { buildDeterministicClaims, selectClaimDecomposer } from "./claim-decomposer.js";
 import { selectEvidenceMapper } from "./evidence-mapper.js";
 import { evaluateRun } from "./evaluator.js";
@@ -202,7 +203,26 @@ export async function runHarness(projectRoot: string, inputPath: string): Promis
     }, stageContext);
     await writeText(artifactPath(runDir, "decision_memo.md"), decisionMemo);
 
-    const evalReport = await runStage(context, adapters.evaluate, ["run_config.json", "question_spec.json", "source_inventory.json", "source_chunks.json", "claims.json", "evidence.json", "contradictions.json", "red_team.md", "uncertainty.json", "decision_memo.md"], ["eval_report.json"], undefined, stageContext);
+    const agentManifest = buildAgentManifest();
+    const agentRun = await runStage(context, adapters.runAgents, ["question_spec.json", "source_inventory.json", "source_chunks.json", "claims.json", "evidence.json", "contradictions.json", "red_team.md", "uncertainty.json", "decision_memo.md"], ["agent_manifest.json", "agent_findings.json"], {
+      runId,
+      manifest: agentManifest,
+      questionSpec,
+      sourceInventory,
+      sourceChunks,
+      claims: claimsArtifact,
+      evidence: evidenceArtifact,
+      contradictions,
+      redTeam,
+      uncertainty,
+      decisionMemo
+    }, stageContext);
+    await validateOrThrow(validator, schemaIds.agentManifest, agentRun.manifest);
+    await validateOrThrow(validator, schemaIds.agentFindings, agentRun.findings);
+    await writeJson(artifactPath(runDir, "agent_manifest.json"), agentRun.manifest);
+    await writeJson(artifactPath(runDir, "agent_findings.json"), agentRun.findings);
+
+    const evalReport = await runStage(context, adapters.evaluate, ["run_config.json", "question_spec.json", "source_inventory.json", "source_chunks.json", "claims.json", "evidence.json", "contradictions.json", "red_team.md", "uncertainty.json", "decision_memo.md", "agent_findings.json"], ["eval_report.json"], undefined, stageContext);
     await validateOrThrow(validator, schemaIds.evalReport, evalReport);
     await writeJson(artifactPath(runDir, "eval_report.json"), evalReport);
 

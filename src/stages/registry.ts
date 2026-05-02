@@ -88,6 +88,8 @@ function deterministicModuleId(stage: StageName): string {
       return "deterministic.uncertainty-modeler";
     case "write_decision_memo":
       return "deterministic.memo-writer";
+    case "run_agents":
+      return "deterministic.bounded-agent-council";
     case "evaluate":
       return "deterministic.evaluator";
   }

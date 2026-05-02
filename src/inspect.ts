@@ -1,16 +1,17 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { validateRunIntegrity } from "./integrity.js";
-import type { ClaimsArtifact, EvalReport, EvidenceArtifact, QueryIntakeArtifact, RunConfig, SourceChunksArtifact, SourceInventory } from "./types.js";
+import type { AgentFindingsArtifact, ClaimsArtifact, EvalReport, EvidenceArtifact, QueryIntakeArtifact, RunConfig, SourceChunksArtifact, SourceInventory } from "./types.js";
 
 export async function inspectRun(projectRoot: string, runDir: string): Promise<string> {
   const absoluteRunDir = path.resolve(projectRoot, runDir);
-  const [runConfig, claims, evidence, sourceInventory, sourceChunks, evalReport, integrity] = await Promise.all([
+  const [runConfig, claims, evidence, sourceInventory, sourceChunks, agentFindings, evalReport, integrity] = await Promise.all([
     readJson<RunConfig>(absoluteRunDir, "run_config.json"),
     readJson<ClaimsArtifact>(absoluteRunDir, "claims.json"),
     readJson<EvidenceArtifact>(absoluteRunDir, "evidence.json"),
     readJson<SourceInventory>(absoluteRunDir, "source_inventory.json"),
     readJson<SourceChunksArtifact>(absoluteRunDir, "source_chunks.json"),
+    readOptionalJson<AgentFindingsArtifact>(absoluteRunDir, "agent_findings.json"),
     readJson<EvalReport>(absoluteRunDir, "eval_report.json"),
     validateRunIntegrity(projectRoot, absoluteRunDir)
   ]);
@@ -22,6 +23,9 @@ export async function inspectRun(projectRoot: string, runDir: string): Promise<s
     .join("\n");
   const councilReviewLines = evalReport.council.reviewers
     .map((reviewer) => `  ${reviewer.role_id}: ${reviewer.status} (${reviewer.score})`)
+    .join("\n");
+  const agentLines = (agentFindings?.findings ?? [])
+    .map((finding) => `  ${finding.agent_id}: ${finding.status} (${finding.confidence})`)
     .join("\n");
 
   return [
@@ -41,6 +45,13 @@ export async function inspectRun(projectRoot: string, runDir: string): Promise<s
     `Evidence: ${evidence.evidence.length}`,
     `Sources: ${sourceInventory.sources.length}`,
     `Source chunks: ${sourceChunks.chunks.length}`,
+    ...(agentFindings
+      ? [
+          `Agents: ${agentFindings.synthesis.status} (${agentFindings.synthesis.confidence})`,
+          "Bounded agents:",
+          agentLines
+        ]
+      : []),
     "Scores:",
     scoreLines,
     `Council: ${evalReport.council.synthesis.status} (${evalReport.council.synthesis.confidence})`,
