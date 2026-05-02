@@ -7,7 +7,7 @@ import type { StageModule } from "./stages/types.js";
 import type { RunConfig, RunInput } from "./types.js";
 import { schemaIds } from "./validator.js";
 
-export const HARNESS_VERSION = "1.12.1";
+export const HARNESS_VERSION = "1.13.0";
 
 export type BuildRunConfigInput = {
   projectRoot: string;

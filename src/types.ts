@@ -49,6 +49,7 @@ export type QueryIntakeArtifact = {
     output_goal: string;
     analysis_scope: string;
     source_policy: string;
+    source_pack?: string;
   };
 };
 

@@ -105,6 +105,15 @@ npm run crux -- ask "Should our operations team automate invoice approvals this 
   --time-horizon "90 days"
 ```
 
+Attach an existing source pack:
+
+```bash
+npm run crux -- ask "Should we prioritize onboarding improvements this quarter?" \
+  --context "The product team is comparing activation and enterprise capacity constraints." \
+  --source-policy offline \
+  --source-pack sources/product-strategy
+```
+
 Install the `crux` command on your machine:
 
 ```bash
@@ -159,6 +168,8 @@ The query intake layer writes `query_intake.json` and records:
 - generated run input
 
 Unknown scopes use a generic scope-agnostic profile. Crux does not force arbitrary questions into unrelated vertical templates.
+
+When `--source-pack` is provided, the generated run input preserves `source_pack`, and the run emits source inventory and source chunks for the attached material.
 
 ## Trust Model
 

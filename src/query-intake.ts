@@ -9,6 +9,7 @@ export type QueryRunOptions = {
   timeHorizon?: string;
   outputGoal?: string;
   sourcePolicy?: string;
+  sourcePack?: string;
 };
 
 export type QueryRunResult = RunResult & {
@@ -35,12 +36,13 @@ export function buildRunInputFromQuery(rawQuery: string, options: QueryRunOption
   const answerability = ambiguous ? "needs_clarification" : options.context ? "answerable" : "answerable_with_assumptions";
   const analysisScope = "general-analysis";
   const sourcePolicy = options.sourcePolicy ?? "hybrid";
+  const sourcePack = options.sourcePack?.trim();
   const decisionContext = options.context ?? buildDefaultContext(intent, riskLevel);
   const timeHorizon = options.timeHorizon ?? inferTimeHorizon(normalizedQuery, intent);
   const outputGoal = options.outputGoal ?? defaultOutputGoal(intent);
   const clarifyingQuestions = buildClarifyingQuestions(normalizedQuery, intent, ambiguous);
   const sourceNeeds = buildSourceNeeds(normalizedQuery, intent, riskLevel);
-  const assumptions = buildAssumptions(riskLevel, answerability, sourcePolicy);
+  const assumptions = buildAssumptions(riskLevel, answerability, sourcePolicy, Boolean(sourcePack));
 
   const generatedInput = {
     question: originalQuery,
@@ -48,7 +50,8 @@ export function buildRunInputFromQuery(rawQuery: string, options: QueryRunOption
     time_horizon: timeHorizon,
     output_goal: outputGoal,
     analysis_scope: analysisScope,
-    source_policy: sourcePolicy
+    source_policy: sourcePolicy,
+    ...(sourcePack ? { source_pack: sourcePack } : {})
   };
 
   const intake: QueryIntakeArtifact = {
@@ -79,6 +82,7 @@ export function buildRunInputFromQuery(rawQuery: string, options: QueryRunOption
         `Query intake answerability: ${answerability}.`,
         `Query intake risk level: ${riskLevel}.`,
         `Source policy requested: ${sourcePolicy}.`,
+        ...(sourcePack ? [`Attached source pack: ${sourcePack}.`] : []),
         ...assumptions,
         ...sourceNeeds.map((need) => `Evidence need (${need.priority} ${need.source_type}): ${need.question}`)
       ],
@@ -280,11 +284,14 @@ function buildSourceNeeds(
 function buildAssumptions(
   riskLevel: QueryIntakeArtifact["risk_level"],
   answerability: QueryIntakeArtifact["answerability"],
-  sourcePolicy: string
+  sourcePolicy: string,
+  hasSourcePack: boolean
 ): string[] {
   const assumptions = [
     "The query is treated as scope-agnostic unless the user supplies a vertical pack or source pack.",
-    `The initial run may use placeholder evidence until ${sourcePolicy} source material is connected.`
+    hasSourcePack
+      ? `The attached source pack is treated as local ${sourcePolicy} evidence and must be inspected for completeness.`
+      : `The initial run may use placeholder evidence until ${sourcePolicy} source material is connected.`
   ];
 
   if (answerability === "needs_clarification") {

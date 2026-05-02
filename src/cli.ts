@@ -14,14 +14,14 @@ import { runQuery, type QueryRunOptions, type QueryRunResult } from "./query-int
 import { addClaimReview, addEvidenceAnnotation, exportReviewedMemo, initReview } from "./review.js";
 import { writeRunReport } from "./run-report.js";
 import { importSources } from "./source-importer.js";
-import type { EvalReport } from "./types.js";
+import type { EvalReport, SourceChunksArtifact, SourceInventory } from "./types.js";
 
 const program = new Command();
 
 program
   .name("crux")
   .description("Spec-driven harness for decision-grade analysis agents.")
-  .version("1.12.1");
+  .version("1.13.0");
 
 program
   .command("run")
@@ -39,13 +39,15 @@ program
   .option("--time-horizon <text>", "Time horizon for the analysis")
   .option("--output-goal <text>", "Output goal for the generated run", "decision memo")
   .option("--source-policy <policy>", "Source policy for the generated run", "hybrid")
+  .option("--source-pack <dir>", "Source pack directory to attach to the generated run")
   .description("Normalize a raw arbitrary query and run the Crux pipeline")
-  .action(async (question: string, options: { context?: string; timeHorizon?: string; outputGoal?: string; sourcePolicy?: string }) => {
+  .action(async (question: string, options: { context?: string; timeHorizon?: string; outputGoal?: string; sourcePolicy?: string; sourcePack?: string }) => {
     await runAndPrintQuery(question, {
       context: options.context,
       timeHorizon: options.timeHorizon,
       outputGoal: options.outputGoal,
-      sourcePolicy: options.sourcePolicy
+      sourcePolicy: options.sourcePolicy,
+      sourcePack: options.sourcePack
     });
   });
 
@@ -56,14 +58,16 @@ program
   .option("--time-horizon <text>", "Time horizon for the analysis")
   .option("--output-goal <text>", "Output goal for the generated run", "decision memo")
   .option("--source-policy <policy>", "Source policy for the generated run", "hybrid")
+  .option("--source-pack <dir>", "Source pack directory to attach to the generated run")
   .description("Ask Crux an arbitrary question and get an auditable run")
-  .action(async (questionParts: string[] | undefined, options: { context?: string; timeHorizon?: string; outputGoal?: string; sourcePolicy?: string }) => {
+  .action(async (questionParts: string[] | undefined, options: { context?: string; timeHorizon?: string; outputGoal?: string; sourcePolicy?: string; sourcePack?: string }) => {
     const question = (questionParts ?? []).join(" ").trim() || await promptForQuestion();
     await runAndPrintQuery(question, {
       context: options.context,
       timeHorizon: options.timeHorizon,
       outputGoal: options.outputGoal,
-      sourcePolicy: options.sourcePolicy
+      sourcePolicy: options.sourcePolicy,
+      sourcePack: options.sourcePack
     });
   });
 
@@ -328,10 +332,21 @@ async function runAndPrintQuery(question: string, options: QueryRunOptions): Pro
     readFile(path.join(result.runDir, "decision_memo.md"), "utf8"),
     readJson<EvalReport>(path.join(result.runDir, "eval_report.json"))
   ]);
-  printQueryRunSummary(result, reportPath, memo, evalReport);
+  const [sourceInventory, sourceChunks] = await Promise.all([
+    readJson<SourceInventory>(path.join(result.runDir, "source_inventory.json")),
+    readJson<SourceChunksArtifact>(path.join(result.runDir, "source_chunks.json"))
+  ]);
+  printQueryRunSummary(result, reportPath, memo, evalReport, sourceInventory, sourceChunks);
 }
 
-function printQueryRunSummary(result: QueryRunResult, reportPath: string, memo: string, evalReport: EvalReport): void {
+function printQueryRunSummary(
+  result: QueryRunResult,
+  reportPath: string,
+  memo: string,
+  evalReport: EvalReport,
+  sourceInventory: SourceInventory,
+  sourceChunks: SourceChunksArtifact
+): void {
   const runDir = path.relative(process.cwd(), result.runDir);
   const generatedInput = path.relative(process.cwd(), result.generatedInputPath);
   const queryIntake = path.join(runDir, "query_intake.json");
@@ -351,6 +366,8 @@ function printQueryRunSummary(result: QueryRunResult, reportPath: string, memo: 
   console.log(`Scope: ${result.intake.analysis_scope}`);
   console.log(`Answerability: ${result.intake.answerability}`);
   console.log(`Risk: ${result.intake.risk_level}`);
+  console.log(`Sources: ${sourceInventory.sources.length}`);
+  console.log(`Source chunks: ${sourceChunks.chunks.length}`);
   console.log("");
   console.log("Memo preview:");
   console.log(excerptMemo(memo));

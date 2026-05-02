@@ -67,7 +67,8 @@
         "time_horizon": { "type": "string", "minLength": 1 },
         "output_goal": { "type": "string", "minLength": 1 },
         "analysis_scope": { "type": "string", "minLength": 1 },
-        "source_policy": { "type": "string", "minLength": 1 }
+        "source_policy": { "type": "string", "minLength": 1 },
+        "source_pack": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
     }

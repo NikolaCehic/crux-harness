@@ -39,6 +39,24 @@ test("query intake turns an arbitrary question into a generic run input", () => 
   assert.equal(normalized.input.known_constraints?.some((constraint) => constraint.includes("No vertical pack selected")), true);
 });
 
+test("query intake preserves an attached source pack for arbitrary questions", () => {
+  const normalized = buildRunInputFromQuery(
+    "Should we prioritize enterprise onboarding improvements this quarter?",
+    {
+      context: "The product team has source material from discovery and capacity planning.",
+      sourcePolicy: "offline",
+      sourcePack: "sources/product-strategy"
+    }
+  );
+
+  assert.equal(normalized.input.source_pack, "sources/product-strategy");
+  assert.equal(normalized.intake.generated_input.source_pack, "sources/product-strategy");
+  assert.equal(normalized.intake.source_policy, "offline");
+  assert.equal(normalized.intake.answerability, "answerable");
+  assert.equal(normalized.input.known_constraints?.some((constraint) => constraint.includes("Attached source pack: sources/product-strategy")), true);
+  assert.equal(normalized.intake.assumptions.some((assumption) => assumption.includes("placeholder evidence")), false);
+});
+
 test("query intake flags ambiguous and high-stakes arbitrary queries", () => {
   const ambiguous = buildRunInputFromQuery("What should we do?");
   assert.equal(ambiguous.intake.answerability, "needs_clarification");
@@ -141,4 +159,32 @@ test("compiled CLI ask command is the first-class arbitrary-question workflow", 
   assert.doesNotMatch(runDir, /T\d{6}Z-\d{8}T\d{6}Z-/);
   assert.equal(existsSync(path.join(projectRoot, runDir, "query_intake.json")), true);
   assert.equal(existsSync(path.join(projectRoot, runDir, "run_report.html")), true);
+});
+
+test("compiled CLI ask command can attach a source pack to arbitrary questions", async () => {
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    [
+      cliPath,
+      "ask",
+      "Should we prioritize onboarding improvements this quarter?",
+      "--context",
+      "The product team is weighing customer activation and enterprise capacity constraints.",
+      "--source-policy",
+      "offline",
+      "--source-pack",
+      "sources/product-strategy"
+    ],
+    { cwd: projectRoot, env: deterministicEnv }
+  );
+
+  const runMatch = stdout.match(/Query run complete: (.+)/);
+  assert.ok(runMatch, "ask command should print the run directory");
+  const runDir = runMatch[1].trim();
+  const runConfig = JSON.parse(await readFile(path.join(projectRoot, runDir, "run_config.json"), "utf8"));
+  const sourceInventory = JSON.parse(await readFile(path.join(projectRoot, runDir, "source_inventory.json"), "utf8"));
+
+  assert.equal(runConfig.source_pack, "sources/product-strategy");
+  assert.equal(sourceInventory.sources.length, 3);
+  assert.match(stdout, /Sources: 3/);
 });

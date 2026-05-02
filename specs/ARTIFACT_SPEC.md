@@ -87,6 +87,7 @@ Required fields:
 - `generated_input`
 
 `query_intake.json` is the trust boundary between a raw user query and the normalized `input.yaml` consumed by the pipeline.
+When a raw query attaches a source pack, `generated_input.source_pack` preserves the source-pack path used by the generated run.
 
 ## run_config.json
 

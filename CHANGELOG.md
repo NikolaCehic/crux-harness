@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.13.0 - 2026-05-02
+
+- Added `sourcePack` support to arbitrary-query intake so generated runs can attach a real source pack.
+- Added `--source-pack <dir>` to `crux query` and `crux ask`.
+- Added source and source-chunk counts to the CLI query/ask summary.
+- Added tests proving arbitrary questions preserve source packs through `query_intake.json`, `run_config.json`, and `source_inventory.json`.
+
 ## 1.12.1 - 2026-05-02
 
 - Added detailed human-readable Markdown specs for every bounded agent, including Red Team Agent and Council Moderator.
